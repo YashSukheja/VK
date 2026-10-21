@@ -1,6 +1,7 @@
 // Runs after catalog.spec.mjs and customer.spec.mjs: VK-1001 (Oxford Shirt L ×2,
 // Slim Jeans 32 ×1) is waiting, and only one pair of jeans is in stock.
 import { expect, test } from '@playwright/test'
+import path from 'node:path'
 import { makeUser, service, totp } from '../tests/helpers.mjs'
 
 test.describe.configure({ mode: 'serial' })
@@ -220,4 +221,59 @@ test('a customer asks to be told when jeans are back; VK sees it and tells them;
   await tell.click()
   await (await popup).close()
   await expect(page.getByRole('region', { name: 'Waiting for stock' })).toHaveCount(0)
+})
+
+test('VK adds a second colour; shoppers see both and book the new one', async ({ page }) => {
+  await adminLogin(page)
+  await page.getByRole('link', { name: 'Products' }).click()
+  await page.getByRole('link', { name: /Oxford Shirt, Sky Blue/ }).click()
+  await page.getByLabel('Colour name (optional)').fill('Sky Blue')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByText('Saved. It’s live in the shop.')).toBeVisible()
+
+  await page.getByRole('link', { name: 'Add another colour' }).click()
+  await expect(page.getByRole('heading', { name: 'Add a colour' })).toBeVisible()
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Oxford Shirt, Sky Blue')
+  await page.getByLabel('Name', { exact: true }).fill('Oxford Shirt')
+  await page.getByLabel('Colour name (optional)').fill('Navy')
+  await page.locator('input[type=file]').setInputFiles(path.join(import.meta.dirname, 'fixtures', 'jeans.jpg'))
+  await expect(page.getByText('COVER')).toBeVisible()
+  await page.getByLabel('Selling price').fill('599')
+  await page.getByRole('button', { name: 'Add one M', exact: true }).click()
+  await page.getByRole('button', { name: 'Save and show in shop' }).click()
+  await expect(page.getByText('Saved. It’s live in the shop.')).toBeVisible()
+  const group = page.getByRole('region', { name: 'Colours of this item' })
+  await expect(group).toContainText('2 colours')
+  await expect(group).toContainText('Sky Blue')
+  if (shots) await page.screenshot({ path: `${shots}/admin-colours.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Log out' }).click()
+
+  // One card for the shirt, with a small photo of each colour.
+  await page.goto('/?cat=shirts')
+  await expect(page.getByText('1 item')).toBeVisible()
+  const colours = page.getByRole('group', { name: '2 colours' })
+  await expect(colours.getByRole('link')).toHaveCount(2)
+  if (shots) await page.screenshot({ path: `${shots}/shop-colours.png` })
+  await colours.getByRole('link', { name: 'Navy' }).click()
+  await expect(page.getByRole('heading', { name: 'Oxford Shirt', exact: true })).toBeVisible()
+  await expect(page.getByText('Colour: Navy')).toBeVisible()
+  await expect(page.getByText('₹599').first()).toBeVisible()
+  const picker = page.getByRole('group', { name: 'Choose a colour' })
+  await picker.getByRole('link', { name: 'Sky Blue' }).click()
+  await expect(page.getByText('Colour: Sky Blue')).toBeVisible()
+  await expect(page.getByText('₹549').first()).toBeVisible()
+  await page.getByRole('group', { name: 'Choose a colour' }).getByRole('link', { name: 'Navy' }).click()
+  await expect(page.getByText('Colour: Navy')).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/product-colours.png`, fullPage: true })
+
+  await page.getByRole('button', { name: 'Add to cart' }).click()
+  await page.getByRole('link', { name: 'Added · View cart' }).click()
+  await expect(page.getByText('Navy · Size M')).toBeVisible()
+  await page.getByRole('link', { name: 'Log in to book' }).click()
+  await page.getByLabel('Username or mobile number').fill(buyer.username)
+  await page.getByLabel('Password').fill('fresh-pass-456')
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await page.getByRole('button', { name: 'Book now · ₹599' }).click()
+  const wa = page.getByRole('link', { name: 'Send to VK on WhatsApp' }).first()
+  expect(decodeURIComponent(await wa.getAttribute('href'))).toContain('1. Oxford Shirt (Navy) | Size M | Qty 1 | ₹599')
 })

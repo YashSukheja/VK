@@ -30,6 +30,10 @@ export type Product = {
   is_visible: boolean
   /** Missing until setup file 5 has been run. */
   on_sale?: boolean
+  /** Missing until setup file 7 has been run. */
+  colour?: string | null
+  /** Colours of the same item share this. */
+  group_id?: string | null
   created_at: string
   product_images: ProductImage[]
   product_sizes: ProductSize[]

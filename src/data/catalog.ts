@@ -36,3 +36,8 @@ export async function fetchSettings(): Promise<StoreSettings> {
     await supabase.from('store_settings').select('*').eq('id', 1).single(),
   )
 }
+
+/** All colours of one item, oldest first so the order stays put. */
+export async function fetchColours(groupId: string): Promise<Product[]> {
+  return unwrap(await supabase.from('products').select(PRODUCT_COLUMNS).eq('group_id', groupId).order('created_at')) as Product[]
+}

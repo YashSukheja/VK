@@ -117,7 +117,9 @@ export function Cart() {
                     <CloseIcon size={18} />
                   </button>
                 </div>
-                <span className="text-[13px] text-muted">Size {r.size}</span>
+                <span className="text-[13px] text-muted">
+                  {r.product?.colour && <>{r.product.colour} · </>}Size {r.size}
+                </span>
                 <div className="mt-auto flex items-center justify-between">
                   <div className="flex items-center rounded-[10px] border-[1.5px] border-field">
                     <button

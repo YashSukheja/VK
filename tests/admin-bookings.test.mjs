@@ -209,3 +209,15 @@ test('customers ask to be told when a sold-out size is back; only they and the a
   assert.ok((await boss.from('store_settings').update({ instagram: 'bad name!' }).eq('id', 1)).error)
   await boss.from('store_settings').update({ instagram: null, store_hours: null }).eq('id', 1)
 })
+
+test('booked items keep their colour in the name; only the admin can group colours', async () => {
+  const p = await product(3)
+  const a = await customer()
+  await a.c.from('products').update({ colour: 'Hacked', group_id: p.id }).eq('id', p.id)
+  assert.equal((await service().from('products').select('colour').eq('id', p.id).single()).data.colour, null)
+  assert.ifError((await boss.from('products').update({ colour: 'Navy', group_id: p.id }).eq('id', p.id)).error)
+
+  const bookingId = await book(a.c, p)
+  const { data: items } = await a.c.from('booking_items').select('product_name').eq('booking_id', bookingId)
+  assert.deepEqual(items.map((i) => i.product_name), [`${p.name} (Navy)`])
+})

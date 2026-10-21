@@ -7,18 +7,23 @@ import { CartButton, SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { ProductPageSkeleton } from '../components/Skeletons'
 import { ErrorBox } from '../components/States'
-import { fetchCategories, fetchProduct, fetchSettings } from '../data/catalog'
+import { fetchCategories, fetchColours, fetchProduct, fetchSettings } from '../data/catalog'
+import { displayName } from '../lib/colours'
 import { discountPercent, formatPrice, LOW_STOCK, productTag, sortedImages, sortedSizes, whatsappLink } from '../lib/format'
 import { Tag } from '../components/ProductCard'
 import { MAX_QTY, useCart } from '../lib/cart'
-import { imageUrl } from '../lib/supabase'
+import { imageUrl, thumbUrl } from '../lib/supabase'
 import { flyToCart } from '../lib/flyToCart'
 import { useAsync } from '../lib/useAsync'
 import { useTitle } from '../lib/useTitle'
 
 export function ProductPage() {
   const { id = '' } = useParams()
-  const product = useAsync(() => Promise.all([fetchProduct(id), fetchCategories()]), [id])
+  const product = useAsync(async () => {
+    const [found, categories] = await Promise.all([fetchProduct(id), fetchCategories()])
+    const colours = found?.group_id ? await fetchColours(found.group_id) : []
+    return [found, categories, colours] as const
+  }, [id])
   const settings = useAsync(fetchSettings, [])
   const [pickedSize, setPickedSize] = useState<string | null>(null)
   const [qty, setQty] = useState(1)
@@ -26,7 +31,7 @@ export function ProductPage() {
   const [added, setAdded] = useState<string | null>(null)
   const cart = useCart()
   const galleryRef = useRef<HTMLDivElement>(null)
-  useTitle(product.data?.[0]?.name)
+  useTitle(product.data?.[0] ? displayName(product.data[0]) : undefined)
 
   if (product.loading) {
     return (
@@ -43,7 +48,7 @@ export function ProductPage() {
     )
   }
 
-  const [p, categories] = product.data ?? [null, []]
+  const [p, categories, colours] = product.data ?? [null, [], []]
   if (!p) {
     return (
       <Shell settings={settings.data}>
@@ -71,7 +76,7 @@ export function ProductPage() {
   const wa = settings.data?.whatsapp_number
 
   const canAdd = !!current && maxQty > 0
-  const askText = `Hi VK, will ${p.name} come back in stock?`
+  const askText = `Hi VK, will ${displayName(p)} come back in stock?`
 
   function addToCart() {
     if (!current || !canAdd) return
@@ -139,7 +144,7 @@ export function ProductPage() {
               )}
               <button
                 type="button"
-                onClick={() => void shareProduct(p.name, p.price, p.id)}
+                onClick={() => void shareProduct(displayName(p), p.price, p.id)}
                 className="flex min-h-11 items-center gap-1.5 rounded-xl border-[1.5px] border-field px-3 text-sm font-extrabold"
               >
                 <ShareIcon size={16} />
@@ -161,6 +166,34 @@ export function ProductPage() {
             </div>
             {p.description && <p className="m-0 whitespace-pre-line text-sm leading-relaxed text-body">{p.description}</p>}
           </div>
+
+          {colours.length > 1 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="m-0 text-[15px] font-extrabold">
+                Colour: <span className="font-semibold text-body">{p.colour ?? 'This one'}</span>
+              </h2>
+              <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="Choose a colour">
+                {colours.map((c) => {
+                  const img = sortedImages(c)[0]
+                  const current = c.id === p.id
+                  return (
+                    <Link
+                      key={c.id}
+                      to={`/p/${c.id}`}
+                      replace
+                      aria-current={current ? 'true' : undefined}
+                      className="flex w-16 flex-none flex-col items-center gap-1"
+                    >
+                      <span className={`block h-20 w-16 overflow-hidden rounded-lg bg-photo ${current ? 'ring-2 ring-ink ring-offset-2' : 'ring-1 ring-line'}`}>
+                        <Photo src={img ? thumbUrl(img.path) : undefined} fallbackSrc={img ? imageUrl(img.path) : undefined} alt="" className="[&_span]:hidden" />
+                      </span>
+                      <span className={`w-full truncate text-center text-xs ${current ? 'font-extrabold' : 'font-semibold text-muted'}`}>{c.colour ?? 'Other'}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between">

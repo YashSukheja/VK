@@ -8,6 +8,7 @@ import { ProductGridSkeleton } from '../components/Skeletons'
 import { Empty, ErrorBox } from '../components/States'
 import { fetchCategories, fetchProducts, fetchSettings } from '../data/catalog'
 import { compareSizes, discountPercent, totalStock } from '../lib/format'
+import { coloursByGroup, groupKey } from '../lib/colours'
 import type { Product } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
 import { useTitle } from '../lib/useTitle'
@@ -30,7 +31,7 @@ const SORTERS: Record<SortKey, ((a: Product, b: Product) => number) | null> = {
 
 /** True when every word typed appears in the name, description or category. */
 function matches(p: Product, words: string[], categoryName: string) {
-  const text = `${p.name} ${p.description} ${categoryName}`.toLowerCase()
+  const text = `${p.name} ${p.colour ?? ''} ${p.description} ${categoryName}`.toLowerCase()
   return words.every((w) => text.includes(w))
 }
 
@@ -88,8 +89,14 @@ export function Shop() {
     const list = size ? searched.filter((p) => p.product_sizes.some((s) => s.size === size && s.stock > 0)) : searched
     const by = SORTERS[sort]
     // In-stock first, then the chosen order (stable, so ties stay newest first).
-    return [...list].sort((a, b) => Number(totalStock(b) > 0) - Number(totalStock(a) > 0) || (by ? by(a, b) : 0))
+    const sorted = [...list].sort((a, b) => Number(totalStock(b) > 0) - Number(totalStock(a) > 0) || (by ? by(a, b) : 0))
+    // One card per item: the first matching colour stands for its group.
+    const seen = new Set<string>()
+    return sorted.filter((p) => !seen.has(groupKey(p)) && seen.add(groupKey(p)))
   }, [searched, size, sort])
+
+  // Every colour of each item, for the small photos under its card.
+  const colours = useMemo(() => coloursByGroup(products), [products])
 
   const filtering = !!(query || size)
 
@@ -220,7 +227,7 @@ export function Shop() {
               ) : (
                 <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
                   {shown.map((p, i) => (
-                    <ProductCard key={p.id} product={p} index={i} />
+                    <ProductCard key={p.id} product={p} index={i} colours={colours.get(groupKey(p))} />
                   ))}
                 </div>
               )}

@@ -73,7 +73,10 @@ function ProductRow({ product: p, categoryName, waiting }: { product: Product; c
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold">{p.name}</span>
-          <span className="text-xs text-muted">{categoryName}</span>
+          <span className="text-xs text-muted">
+            {categoryName}
+            {p.colour && <> · {p.colour}</>}
+          </span>
           <span className="flex flex-wrap gap-1.5 text-xs">
             <span className={`rounded-md px-1.5 py-0.5 font-bold ${stock === 0 ? 'bg-[#ececE7] text-[#45453f]' : 'bg-surface'}`}>
               {stock === 0 ? 'Sold out' : `${stock} in stock`}

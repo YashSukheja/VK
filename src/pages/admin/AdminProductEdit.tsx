@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Card, fieldClass, Notice, PrimaryButton, Stepper, Toggle } from '../../components/admin'
 import { ArrowLeftIcon, ArrowRightIcon, BackIcon, CloseIcon, PlusIcon } from '../../components/Icons'
 import { ErrorBox, Loading } from '../../components/States'
@@ -9,6 +9,7 @@ import { compressPhoto, makeThumbnail, thumbPath } from '../../lib/images'
 import { IMAGE_BUCKET, imageUrl, supabase } from '../../lib/supabase'
 import type { Category, Product } from '../../lib/types'
 import { useAsync } from '../../lib/useAsync'
+import { ColourGroup } from './ColourGroup'
 import { WaitingCustomers } from './WaitingCustomers'
 
 const MAX_PHOTOS = 8
@@ -23,20 +24,28 @@ export function AdminProductEdit() {
   const { id } = useParams()
   const location = useLocation()
   const isNew = !id || id === 'new'
+  // "Add another colour" opens a new product filled in from this one.
+  const [params] = useSearchParams()
+  const colourOf = isNew ? params.get('colourOf') : null
   // location.key changes after each save, which reloads the saved product.
   const { data, error, loading, reload } = useAsync(
-    () => Promise.all([fetchCategories(), isNew ? Promise.resolve(null) : fetchProduct(id)]),
-    [id, location.key],
+    () =>
+      Promise.all([
+        fetchCategories(),
+        isNew ? Promise.resolve(null) : fetchProduct(id),
+        colourOf ? fetchProduct(colourOf) : Promise.resolve(null),
+      ]),
+    [id, location.key, colourOf],
   )
 
   if (loading) return <Loading />
   if (error) return <ErrorBox message={error} onRetry={reload} />
-  const [categories, product] = data ?? [[], null]
+  const [categories, product, template] = data ?? [[], null, null]
   if (!isNew && !product) return <ErrorBox message="This product was not found. It may have been deleted." />
   if (categories.length === 0) return <ErrorBox message="Add a category first, under Categories." />
 
   const justSaved = Boolean((location.state as { saved?: boolean } | null)?.saved)
-  return <Editor key={`${id ?? 'new'}-${location.key}`} categories={categories} product={product} justSaved={justSaved} />
+  return <Editor key={`${id ?? 'new'}-${location.key}`} categories={categories} product={product} template={template} justSaved={justSaved} />
 }
 
 function sizesFor(category: Category | undefined, current: SizeRow[]): SizeRow[] {
@@ -44,13 +53,26 @@ function sizesFor(category: Category | undefined, current: SizeRow[]): SizeRow[]
   return category.sizes.map((size) => ({ size, stock: current.find((s) => s.size === size)?.stock ?? 0 }))
 }
 
-function Editor({ categories, product, justSaved }: { categories: Category[]; product: Product | null; justSaved: boolean }) {
+function Editor({
+  categories,
+  product,
+  template,
+  justSaved,
+}: {
+  categories: Category[]
+  product: Product | null
+  /** For a new colour: the product it copies its details from. */
+  template: Product | null
+  justSaved: boolean
+}) {
   const navigate = useNavigate()
-  const [name, setName] = useState(product?.name ?? '')
-  const [categoryId, setCategoryId] = useState(product?.category_id ?? categories[0].id)
-  const [description, setDescription] = useState(product?.description ?? '')
-  const [mrp, setMrp] = useState(product?.mrp ? String(product.mrp) : '')
-  const [price, setPrice] = useState(product ? String(product.price) : '')
+  const base = product ?? template
+  const [name, setName] = useState(base?.name ?? '')
+  const [colour, setColour] = useState(product?.colour ?? '')
+  const [categoryId, setCategoryId] = useState(base?.category_id ?? categories[0].id)
+  const [description, setDescription] = useState(base?.description ?? '')
+  const [mrp, setMrp] = useState(base?.mrp ? String(base.mrp) : '')
+  const [price, setPrice] = useState(base ? String(base.price) : '')
   const [visible, setVisible] = useState(product?.is_visible ?? true)
   const [onSale, setOnSale] = useState(product?.on_sale ?? false)
   const [sizes, setSizes] = useState<SizeRow[]>(() => {
@@ -60,7 +82,7 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
       const preset = sizesFor(categories.find((c) => c.id === product.category_id), saved)
       return [...preset, ...saved.filter((s) => !preset.some((p) => p.size === s.size))]
     }
-    return sizesFor(categories[0], [])
+    return sizesFor(categories.find((c) => c.id === template?.category_id) ?? categories[0], [])
   })
   const [photos, setPhotos] = useState<Photo[]>(() =>
     product ? sortedImages(product).map((img) => ({ kind: 'saved', key: img.id, id: img.id, path: img.path, url: imageUrl(img.path) })) : [],
@@ -147,9 +169,21 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
       if (saveError) throw new Error(saveError.message)
       const productId = savedId as string
 
-      if (onSale !== (product?.on_sale ?? false)) {
-        const { error: saleError } = await supabase.from('products').update({ on_sale: onSale }).eq('id', productId)
-        if (saleError) throw new Error(saleError.message.includes('on_sale') ? 'The SALE tag needs setup file 5. Run it in Supabase first.' : saleError.message)
+      // Extras saved outside admin_save_product: the SALE tag, the colour name and the colour group.
+      const extras: Record<string, unknown> = {}
+      if (onSale !== (product?.on_sale ?? false)) extras.on_sale = onSale
+      const colourName = colour.trim() || null
+      if (colourName !== (product?.colour ?? null)) extras.colour = colourName
+      if (template) {
+        extras.group_id = template.group_id ?? template.id
+        if (!template.group_id) {
+          const { error: groupError } = await supabase.from('products').update({ group_id: template.id }).eq('id', template.id)
+          if (groupError) throw new Error(setupMessage(groupError.message))
+        }
+      }
+      if (Object.keys(extras).length) {
+        const { error: extraError } = await supabase.from('products').update(extras).eq('id', productId)
+        if (extraError) throw new Error(setupMessage(extraError.message))
       }
 
       if (removed.length) {
@@ -200,9 +234,14 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
         <Link to="/admin/products" aria-label="Back to products" className="flex size-11 items-center justify-center">
           <BackIcon />
         </Link>
-        <h1 className="m-0 font-display text-2xl font-black uppercase">{product ? 'Edit product' : 'Add product'}</h1>
+        <h1 className="m-0 font-display text-2xl font-black uppercase">{product ? 'Edit product' : template ? 'Add a colour' : 'Add product'}</h1>
       </div>
 
+      {template && !justSaved && (
+        <Notice kind="ok">
+          New colour of {template.name}. Add this colour's photos, name, price and stock, then save.
+        </Notice>
+      )}
       {justSaved && !message && <Notice kind="ok">{visible ? 'Saved. It’s live in the shop.' : 'Saved. It’s hidden from the shop.'}</Notice>}
 
       <Card title="Photos" aside={<span className="text-xs text-muted">{photos.length}/{MAX_PHOTOS}</span>}>
@@ -238,7 +277,12 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
       <Card>
         <label className="flex flex-col gap-1.5 text-sm font-extrabold">
           Name
-          <input className={fieldClass} required maxLength={80} placeholder="e.g. Oxford Shirt, Sky Blue" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className={fieldClass} required maxLength={80} placeholder="e.g. Oxford Shirt" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-extrabold">
+          Colour name (optional)
+          <input className={fieldClass} maxLength={30} placeholder="e.g. Navy" value={colour} onChange={(e) => setColour(e.target.value)} />
+          <span className="text-xs font-semibold text-muted">Shown as the colour choice when this item comes in more colours.</span>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-extrabold">
           Category
@@ -284,6 +328,8 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
         )}
       </Card>
 
+      {product && <ColourGroup product={product} />}
+
       {product && <WaitingCustomers productId={product.id} productName={product.name} />}
 
       <Card>
@@ -304,4 +350,11 @@ function Editor({ categories, product, justSaved }: { categories: Category[]; pr
       )}
     </form>
   )
+}
+
+/** Turns "column does not exist" errors into which setup file to run. */
+function setupMessage(message: string): string {
+  if (/colour|group_id/.test(message)) return 'Colours need setup file 7. Run it in Supabase first.'
+  if (/on_sale/.test(message)) return 'The SALE tag needs setup file 5. Run it in Supabase first.'
+  return message
 }

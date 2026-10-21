@@ -72,7 +72,7 @@ test('admin fills in store settings and adds products with photos and stock', as
   await expect(page.getByAltText('Photo 2')).toBeVisible()
   // Remove the second photo again.
   await page.getByRole('button', { name: 'Remove photo 2' }).click()
-  await page.getByLabel('Name').fill('Oxford Shirt, Sky Blue')
+  await page.getByLabel('Name', { exact: true }).fill('Oxford Shirt, Sky Blue')
   await page.getByLabel('Category').selectOption({ label: 'Shirts' })
   await page.getByLabel('Description').fill('Soft cotton, regular fit. Worn once.')
   await page.getByLabel('MRP (optional)').fill('1299')
@@ -94,7 +94,7 @@ test('admin fills in store settings and adds products with photos and stock', as
   await page.goto('/admin/products/new')
   await page.locator('input[type=file]').setInputFiles(fixture('jeans.jpg'))
   await expect(page.getByText('COVER')).toBeVisible()
-  await page.getByLabel('Name').fill('Slim Jeans, Dark Wash')
+  await page.getByLabel('Name', { exact: true }).fill('Slim Jeans, Dark Wash')
   await page.getByLabel('Category').selectOption({ label: 'Jeans' })
   await page.getByLabel('MRP (optional)').fill('1999')
   await page.getByLabel('Selling price').fill('799')

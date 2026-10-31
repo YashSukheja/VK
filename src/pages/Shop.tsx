@@ -99,6 +99,7 @@ export function Shop() {
   const colours = useMemo(() => coloursByGroup(products), [products])
 
   const filtering = !!(query || size)
+  const title = query ? 'Results' : active ? active.name : 'New in'
 
   const links = [{ slug: '', name: 'All' }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))]
 
@@ -106,14 +107,12 @@ export function Shop() {
     <div className="min-h-dvh bg-white">
       <SiteHeader settings={settings.data} />
       <div className="mx-auto max-w-6xl px-5 pb-16">
-        <section className="mt-4 flex flex-col gap-2 rounded-2xl bg-ink px-5 py-6 text-white md:flex-row md:items-end md:justify-between md:px-8 md:py-9">
-          <h1 className="m-0 font-display text-[28px] font-black leading-[1.02] md:text-5xl">
-            <Words text="FRESH PICKS." />
-            <br />
-            <Words text="LOCAL PRICES." from={2} />
+        <section className="flex flex-col gap-3 border-b-[1.5px] border-ink pb-5 pt-8 md:flex-row md:items-end md:justify-between md:pt-12">
+          <h1 className="m-0 font-display text-[52px] font-black uppercase leading-[0.85] md:text-[112px]">
+            <Words key={title} text={title} />
           </h1>
-          <p className="m-0 max-w-xs text-sm leading-relaxed text-[#d9d9d4] md:text-base">
-            Book online. Pay cash or UPI at pickup or delivery.
+          <p className="m-0 max-w-xs text-sm leading-relaxed text-body md:pb-2 md:text-right">
+            {catalog.loading ? 'Book online. Pay cash or UPI on pickup.' : `${shown.length} ${shown.length === 1 ? 'piece' : 'pieces'}. Book online, pay cash or UPI on pickup.`}
           </p>
         </section>
 
@@ -134,10 +133,8 @@ export function Shop() {
                     key={l.slug || 'all'}
                     to={categoryLink(l.slug)}
                     aria-current={selected ? 'page' : undefined}
-                    className={`flex h-10 flex-none items-center rounded-full border-[1.5px] px-4 text-sm md:h-11 md:rounded-xl md:border-0 md:px-3 ${
-                      selected
-                        ? 'border-ink bg-ink font-bold text-white'
-                        : 'border-[#e1e1db] font-semibold text-ink hover:bg-surface'
+                    className={`flex h-10 flex-none items-center border-[1.5px] px-4 text-sm font-bold uppercase md:h-11 md:border-0 md:px-3 ${
+                      selected ? 'border-ink bg-ink text-white' : 'border-line text-ink hover:bg-surface'
                     }`}
                   >
                     {l.name}
@@ -208,12 +205,6 @@ export function Shop() {
                   </div>
                 )}
               </div>
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="m-0 font-display text-xl font-extrabold uppercase">{query ? 'Results' : active ? active.name : 'New in'}</h2>
-                <span className="text-[13px] text-muted">
-                  {shown.length} {shown.length === 1 ? 'item' : 'items'}
-                </span>
-              </div>
               {shown.length === 0 && filtering ? (
                 <Empty>
                   Nothing matches{query && <> “{query}”</>}
@@ -225,7 +216,7 @@ export function Shop() {
               ) : shown.length === 0 ? (
                 <Empty>Nothing here right now. New stock arrives every week.</Empty>
               ) : (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
+                <div className="offset-grid grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
                   {shown.map((p, i) => (
                     <ProductCard key={p.id} product={p} index={i} colours={colours.get(groupKey(p))} />
                   ))}

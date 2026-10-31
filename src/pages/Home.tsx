@@ -57,11 +57,9 @@ export function Home() {
         {catalog.loading && <ProductGridSkeleton />}
         {catalog.error && <ErrorBox message={catalog.error} onRetry={catalog.reload} />}
         {!catalog.loading && !catalog.error && (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:gap-x-5">
+          <div className="offset-grid grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:gap-x-5">
             {items.slice(0, NEW_IN).map((p, i) => (
-              <div key={p.id} className={i % 2 === 1 ? 'mt-10 sm:mt-0' : ''}>
-                <ProductCard product={p} index={i} colours={colours.get(groupKey(p))} />
-              </div>
+              <ProductCard key={p.id} product={p} index={i} colours={colours.get(groupKey(p))} />
             ))}
           </div>
         )}

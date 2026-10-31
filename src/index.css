@@ -249,3 +249,10 @@ button:not(:disabled):active,
     opacity: 1;
   }
 }
+
+/* Shop grids on phones: the right column sits a little lower, like a magazine page. */
+@media (max-width: 639px) {
+  .offset-grid > :nth-child(even) {
+    margin-top: 2.5rem;
+  }
+}

@@ -92,8 +92,14 @@ test('admin fills in store settings and adds products with photos and stock', as
   await expect(page.getByText('MRP must be a whole number')).toBeVisible()
 
   await page.goto('/admin/products/new')
-  await page.locator('input[type=file]').setInputFiles(fixture('jeans.jpg'))
+  await page.locator('input[type=file]').setInputFiles([fixture('jeans.jpg'), fixture('jeans.jpg')])
   await expect(page.getByText('COVER')).toBeVisible()
+  // The second photo is the plain phone photo.
+  await page.getByRole('button', { name: 'Photo 2 is the real photo' }).click()
+  await expect(page.getByRole('button', { name: 'Photo 2 is the real photo' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'cm', exact: true }).click()
+  await page.getByLabel(/^Waist/).fill('82')
+  await page.getByLabel(/^Length/).fill('104')
   await page.getByLabel('Name', { exact: true }).fill('Slim Jeans, Dark Wash')
   await page.getByLabel('Category').selectOption({ label: 'Jeans' })
   await page.getByLabel('MRP (optional)').fill('1999')
@@ -124,10 +130,22 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
 
   await page.getByRole('link', { name: 'Jeans', exact: true }).click()
   await expect(page).toHaveURL(/cat=jeans/)
-  await expect(page.getByText('1 item')).toBeVisible()
+  await expect(page.getByText('1 piece.')).toBeVisible()
   await expect(page.getByRole('link', { name: /Oxford Shirt/ })).toHaveCount(0)
 
-  await page.getByRole('link', { name: 'All', exact: true }).click()
+  // The jeans page shows the real photo label and the measurements.
+  await page.getByRole('link', { name: /Slim Jeans/ }).click()
+  await expect(page.getByAltText('Slim Jeans, Dark Wash, real photo 2 of 2')).toBeAttached()
+  await expect(page.getByText('Real photo')).toBeAttached()
+  const sizes = page.getByRole('region', { name: 'Measurements' })
+  await expect(sizes).toContainText('Waist82 cm')
+  await expect(sizes).toContainText('Length104 cm')
+  await expect(sizes.locator('dt')).toHaveText(['Length', 'Waist'])
+  await expect(page.getByRole('heading', { name: 'Goes well with' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Goes well with' }).getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/product-jeans-phone.png`, fullPage: true })
+
+  await page.goto('/shop')
   await shirt.click()
   await expect(page.getByRole('heading', { name: 'Oxford Shirt, Sky Blue' })).toBeVisible()
   await expect(page.getByText('YOU SAVE ₹750')).toBeVisible()

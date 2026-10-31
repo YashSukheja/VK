@@ -250,7 +250,7 @@ test('VK adds a second colour; shoppers see both and book the new one', async ({
 
   // One card for the shirt, with a small photo of each colour.
   await page.goto('/?cat=shirts')
-  await expect(page.getByText('1 item')).toBeVisible()
+  await expect(page.getByText('1 piece.')).toBeVisible()
   const colours = page.getByRole('group', { name: '2 colours' })
   await expect(colours.getByRole('link')).toHaveCount(2)
   if (shots) await page.screenshot({ path: `${shots}/shop-colours.png` })

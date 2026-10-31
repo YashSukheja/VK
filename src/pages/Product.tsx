@@ -7,10 +7,12 @@ import { CartButton, SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { ProductPageSkeleton } from '../components/Skeletons'
 import { ErrorBox } from '../components/States'
-import { fetchCategories, fetchColours, fetchProduct, fetchSettings } from '../data/catalog'
-import { displayName } from '../lib/colours'
-import { discountPercent, formatPrice, LOW_STOCK, productTag, sortedImages, sortedSizes, whatsappLink } from '../lib/format'
-import { Tag } from '../components/ProductCard'
+import { fetchCategories, fetchColours, fetchProduct, fetchProducts, fetchSettings } from '../data/catalog'
+import { displayName, groupKey } from '../lib/colours'
+import { filledMeasures } from '../lib/measurements'
+import type { Product } from '../lib/types'
+import { discountPercent, formatPrice, LOW_STOCK, productTag, sortedImages, sortedSizes, totalStock, whatsappLink } from '../lib/format'
+import { ProductCard, Tag } from '../components/ProductCard'
 import { MAX_QTY, useCart } from '../lib/cart'
 import { imageUrl, thumbUrl } from '../lib/supabase'
 import { flyToCart } from '../lib/flyToCart'
@@ -25,6 +27,7 @@ export function ProductPage() {
     return [found, categories, colours] as const
   }, [id])
   const settings = useAsync(fetchSettings, [])
+  const all = useAsync(fetchProducts, [])
   const [pickedSize, setPickedSize] = useState<string | null>(null)
   const [qty, setQty] = useState(1)
   const [photoIndex, setPhotoIndex] = useState(0)
@@ -76,6 +79,13 @@ export function ProductPage() {
   const wa = settings.data?.whatsapp_number
 
   const canAdd = !!current && maxQty > 0
+  const measures = filledMeasures(p.measurements)
+  const pairs = goesWellWith(p, all.data ?? [])
+
+  function showPhoto(i: number) {
+    const el = galleryRef.current
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' })
+  }
   const askText = `Hi Vrack, will ${displayName(p)} come back in stock?`
 
   function addToCart() {
@@ -88,13 +98,13 @@ export function ProductPage() {
 
   return (
     <Shell settings={settings.data}>
-      <div className="grid gap-6 pb-28 md:grid-cols-2 md:gap-10 md:pb-16 md:pt-6">
+      <div className={`grid gap-6 md:grid-cols-2 md:gap-10 md:pb-16 md:pt-6 ${pairs.length ? 'pb-12' : 'pb-28'}`}>
         {/* Photos: swipe on phones, thumbnails below. */}
         <div className="-mx-5 md:mx-0">
           <div className="relative">
             <div
               ref={galleryRef}
-              className="no-scrollbar flex aspect-[4/5] snap-x snap-mandatory overflow-x-auto bg-photo md:rounded-2xl"
+              className="no-scrollbar flex aspect-[4/5] snap-x snap-mandatory overflow-x-auto bg-photo"
               onScroll={(e) => {
                 const el = e.currentTarget
                 setPhotoIndex(Math.round(el.scrollLeft / el.clientWidth))
@@ -106,8 +116,11 @@ export function ProductPage() {
                 </div>
               ) : (
                 images.map((img, i) => (
-                  <div key={img.id} className="w-full flex-none snap-center">
-                    <Photo src={imageUrl(img.path)} alt={`${p.name}, photo ${i + 1} of ${images.length}`} />
+                  <div key={img.id} className="relative w-full flex-none snap-center">
+                    <Photo src={imageUrl(img.path)} alt={`${p.name}, ${img.is_real ? 'real photo' : 'photo'} ${i + 1} of ${images.length}`} />
+                    {img.is_real && (
+                      <span className="absolute bottom-10 left-3.5 bg-white px-2 py-1 text-[11px] font-extrabold uppercase md:bottom-3.5">Real photo</span>
+                    )}
                   </div>
                 ))
               )}
@@ -130,6 +143,22 @@ export function ProductPage() {
               </div>
             )}
           </div>
+          {images.length > 1 && (
+            <div className="mt-2.5 hidden gap-2.5 md:flex" role="group" aria-label="Photos">
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  aria-label={`Show photo ${i + 1}`}
+                  aria-pressed={i === photoIndex}
+                  onClick={() => showPhoto(i)}
+                  className={`h-24 w-20 overflow-hidden bg-photo ${i === photoIndex ? 'ring-2 ring-ink ring-offset-2' : 'opacity-70 hover:opacity-100'}`}
+                >
+                  <Photo src={thumbUrl(img.path)} fallbackSrc={imageUrl(img.path)} alt="" className="[&_span]:hidden" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-5">
@@ -151,7 +180,7 @@ export function ProductPage() {
                 Share
               </button>
             </div>
-            <h1 className="m-0 font-display text-[26px] font-extrabold leading-tight md:text-4xl">{p.name}</h1>
+            <h1 className="m-0 font-display text-[28px] font-black uppercase leading-[0.95] md:text-5xl">{p.name}</h1>
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="font-display text-[26px] font-black">{formatPrice(p.price)}</span>
               {tag && <Tag tag={tag} className={tag === 'NEW' ? 'border-[1.5px] border-ink' : ''} />}
@@ -242,6 +271,28 @@ export function ProductPage() {
               </div>
             )}
           </section>
+
+          {measures.length > 0 && (
+            <section className="flex flex-col gap-2" aria-labelledby="measurements">
+              <h2 id="measurements" className="m-0 text-[15px] font-extrabold">
+                Measurements
+              </h2>
+              <dl className="m-0 flex flex-wrap pl-[1.5px] pt-[1.5px]">
+                {measures.map((m) => (
+                  <div key={m.key} className="-ml-[1.5px] -mt-[1.5px] flex min-w-24 flex-1 flex-col gap-0.5 border-[1.5px] border-ink px-3 py-2.5 sm:flex-none" title={m.hint}>
+                    <dt className="text-xs text-muted">{m.label}</dt>
+                    <dd className="m-0 font-display text-lg font-black">
+                      {m.value} {p.measurements!.unit}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="m-0 text-xs text-muted">
+                Measured on this piece, laid flat.
+                {measures.some((m) => m.key === 'chest' || m.key === 'waist') && ' Chest and waist are doubled, so they match your body size.'}
+              </p>
+            </section>
+          )}
 
           <RestockRequest productId={p.id} soldOut={sizes.filter((s) => s.stock === 0).map((s) => s.size)} />
 
@@ -335,8 +386,28 @@ export function ProductPage() {
           </div>
         </div>
       </div>
+      {pairs.length > 0 && (
+        <section aria-labelledby="pairs" className="pb-28 md:pb-6">
+          <h2 id="pairs" className="m-0 mb-4 font-display text-2xl font-black uppercase md:text-4xl">
+            Goes well with
+          </h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 lg:gap-x-5">
+            {pairs.map((x, i) => (
+              <ProductCard key={x.id} product={x} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
     </Shell>
   )
+}
+
+/** Up to 4 newest pieces in stock from other types, one per item. */
+function goesWellWith(p: Product, all: Product[]): Product[] {
+  const seen = new Set<string>()
+  return all
+    .filter((x) => x.category_id !== p.category_id && totalStock(x) > 0 && !seen.has(groupKey(x)) && seen.add(groupKey(x)))
+    .slice(0, 4)
 }
 
 /** Opens the phone's share sheet; on computers without one, opens WhatsApp. */

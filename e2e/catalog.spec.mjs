@@ -176,8 +176,8 @@ test('the home page shows the mannequin photo, new pieces and types; admin chang
   await expect(heroPhoto).toHaveAttribute('src', '/demo/hero-mannequin.webp')
   expect(await heroPhoto.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
   await expect(page.getByRole('region', { name: 'On the rack' }).getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Jeans\s*\d+ piece/ })).toBeVisible()
-  await page.getByRole('link', { name: /^Jeans\s*\d+ piece/ }).click()
+  await expect(page.getByRole('link', { name: /^Jeans, \d+ piece/ })).toBeVisible()
+  await page.getByRole('link', { name: /^Jeans, \d+ piece/ }).click()
   await expect(page).toHaveURL(/\/shop\?cat=jeans$/)
   await expect(page.getByRole('heading', { name: 'Jeans' })).toBeVisible()
 

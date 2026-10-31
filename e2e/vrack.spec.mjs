@@ -203,10 +203,10 @@ test('VK swaps every product photo for the mannequin demo photos', async ({ page
   await card.getByRole('button', { name: 'Yes, delete and replace' }).click()
   await expect(card.getByText(/^Done\. \d+ old photos removed/)).toBeVisible({ timeout: 30_000 })
 
-  // Old files are gone; every item has a front and back photo.
+  // Old files are gone; every item has at least a front and back photo.
   const { data: after } = await svc.from('product_images').select('path, product_id')
-  const { count } = await svc.from('products').select('id', { count: 'exact', head: true })
-  expect(after.length).toBe(count * 2)
+  const { data: products } = await svc.from('products').select('id')
+  for (const { id } of products) expect(after.filter((r) => r.product_id === id).length).toBeGreaterThanOrEqual(2)
   const oldPaths = new Set(before.map((r) => r.path))
   expect(after.some((r) => oldPaths.has(r.path))).toBe(false)
   const { data: gone } = await svc.storage.from('product-images').download(before[0].path)

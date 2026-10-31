@@ -166,16 +166,28 @@ export async function fetchSalesSince(since: Date): Promise<Sale[]> {
   ) as Sale[]
 }
 
-/** Which demo photos suit a type of clothing: tops get the shirt, bottoms the jeans, the rest the full look. */
-function demoSetFor(category: string): 'shirt' | 'jeans' | 'look' {
+/** The built-in mannequin photos in public/demo, by kind of clothing. Items of one kind take turns through them. */
+const DEMO_SETS = {
+  tee: ['pink-tee', 'black-tee', 'lavender-tee'],
+  shirt: ['shirt', 'plaid-shirt', 'beige-shirt'],
+  jeans: ['jeans', 'blue-jeans', 'white-jeans', 'grey-jeans', 'charcoal-jeans', 'grey-wide-jeans'],
+  look: ['look', 'beige-shirt-look', 'black-tee-look', 'plaid-shirt-look', 'pink-tee-look', 'lavender-tee-look'],
+}
+/** Sets that also have a close-up photo. */
+const DEMO_CLOSEUPS = new Set(['black-tee', 'blue-jeans', 'beige-shirt', 'white-jeans'])
+
+/** Which kind of demo photo suits a type of clothing. */
+function demoKindFor(category: string): keyof typeof DEMO_SETS {
+  if (/t-?shirt|tee|polo|top/i.test(category)) return 'tee'
   if (/jean|trouser|pant|short|cargo|chino|jogger|bottom|denim/i.test(category)) return 'jeans'
-  if (/shirt|tee|top|polo|jacket|hoodie|sweat|kurta|blazer|coat|overshirt/i.test(category)) return 'shirt'
+  if (/shirt|jacket|hoodie|sweat|kurta|blazer|coat|overshirt/i.test(category)) return 'shirt'
   return 'look'
 }
 
 /**
  * Removes every product photo (files and their small copies), then gives each product the built-in
- * mannequin photos (front and back) that suit its type. Stock, prices and bookings are not touched.
+ * mannequin photos (front, back and sometimes a close-up) that suit its type, taking turns through the outfits
+ * so items look different. Stock, prices and bookings are not touched.
  */
 export async function replaceWithDemoPhotos(onProgress: (done: number, total: number) => void): Promise<{ removed: number; products: number }> {
   const old = unwrap(await supabase.from('product_images').select('id, path')) as { id: string; path: string }[]
@@ -207,10 +219,14 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
     return hit
   }
 
+  const turn = { tee: 0, shirt: 0, jeans: 0, look: 0 }
   for (const [i, p] of products.entries()) {
     onProgress(i, products.length)
-    const set = demoSetFor(typeOf.get(p.category_id) ?? '')
-    for (const [order, side] of (['front', 'back'] as const).entries()) {
+    const kind = demoKindFor(typeOf.get(p.category_id) ?? '')
+    const sets = DEMO_SETS[kind]
+    const set = sets[turn[kind]++ % sets.length]
+    const views = DEMO_CLOSEUPS.has(set) ? ['front', 'back', 'closeup'] : ['front', 'back']
+    for (const [order, side] of views.entries()) {
       const { big, small } = await demo(`${set}-${side}`)
       const path = `${p.id}/${crypto.randomUUID()}.webp`
       const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, big, { contentType: 'image/webp' })

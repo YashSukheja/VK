@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { DropBanner } from '../components/DropBanner'
-import { ArrowRightIcon } from '../components/Icons'
+import { Photo } from '../components/Photo'
 import { ProductCard } from '../components/ProductCard'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
 import { ProductGridSkeleton } from '../components/Skeletons'
+import { Stars } from '../components/Stars'
 import { ErrorBox } from '../components/States'
-import { fetchCategories, fetchProducts, fetchSettings, HERO_MODEL_PATH } from '../data/catalog'
+import { fetchCategories, fetchProducts, fetchSettings, HERO_RAIL_PATH } from '../data/catalog'
+import { fetchReviewHighlight } from '../data/reviews'
 import { coloursByGroup, groupKey } from '../lib/colours'
-import { sortedImages, totalStock } from '../lib/format'
+import { discountPercent, formatPrice, sortedImages, totalStock } from '../lib/format'
 import { imageUrl, thumbUrl } from '../lib/supabase'
-import type { Product } from '../lib/types'
+import type { Category, Product } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
 import { useTitle } from '../lib/useTitle'
 
+const ON_RACK = 8
 const NEW_IN = 6
 const RAIL = 4
 
@@ -23,21 +26,18 @@ export function Home() {
   useTitle(null)
   const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])
   const settings = useAsync(fetchSettings, [])
+  const highlight = useAsync(fetchReviewHighlight, [])
   const [categories, products] = catalog.data ?? [[], []]
 
-  // One product per item (colours share a card), in stock first, newest first.
+  // One product per item (colours share a card), newest first.
   const items = useMemo(() => {
     const seen = new Set<string>()
-    const firsts = products.filter((p) => !seen.has(groupKey(p)) && seen.add(groupKey(p)))
-    return [...firsts].sort((a, b) => Number(totalStock(b) > 0) - Number(totalStock(a) > 0))
+    return products.filter((p) => !seen.has(groupKey(p)) && seen.add(groupKey(p)))
   }, [products])
+  const inStock = useMemo(() => items.filter((p) => totalStock(p) > 0), [items])
+  const withPhoto = useMemo(() => inStock.filter((p) => sortedImages(p).length > 0), [inStock])
   const colours = useMemo(() => coloursByGroup(products), [products])
-  const counts = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const p of items) if (totalStock(p) > 0) m.set(p.category_id, (m.get(p.category_id) ?? 0) + 1)
-    return m
-  }, [items])
-  const railItems = items.filter((p) => totalStock(p) > 0 && sortedImages(p).length > 0).slice(0, RAIL)
+  const tiles = useMemo(() => typeTiles(categories, items), [categories, items])
 
   // Old shop links like /?cat=jeans now live at /shop.
   if (search) return <Navigate to={`/shop${search}`} replace />
@@ -45,13 +45,60 @@ export function Home() {
   return (
     <div className="min-h-dvh bg-white">
       <SiteHeader settings={settings.data} />
-      <Hero rail={railItems} />
+      <Hero rail={withPhoto.slice(0, RAIL)} pieces={inStock.length} />
       <Ticker />
-      <DropBanner />
 
-      <section aria-labelledby="new-in" className="mx-auto max-w-6xl px-5 pt-12">
+      {withPhoto.length > 0 && (
+        <section aria-labelledby="on-rack" className="bg-[#f4f4f2] pb-2 pt-10">
+          <div className="mx-auto mb-4 flex max-w-6xl items-baseline justify-between px-5">
+            <h2 id="on-rack" className="m-0 font-display text-[28px] font-black uppercase leading-none md:text-5xl">
+              On the rack
+            </h2>
+            <Link to="/shop" className="flex min-h-11 items-center text-sm font-bold underline underline-offset-4">
+              Shop all {inStock.length}
+            </Link>
+          </div>
+          <ul className="no-scrollbar mx-auto flex max-w-6xl list-none snap-x gap-3 overflow-x-auto px-5 pb-6 md:gap-5">
+            {withPhoto.slice(0, ON_RACK).map((p, i) => (
+              <li key={p.id} className="w-[44vw] max-w-60 flex-none snap-start">
+                <RackCard product={p} index={i} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {tiles.length > 0 && (
+        <section aria-labelledby="by-type" className="mx-auto max-w-6xl px-5 pt-10">
+          <h2 id="by-type" className="m-0 mb-4 font-display text-[28px] font-black uppercase leading-none md:text-5xl">
+            Shop by type
+          </h2>
+          <ul className="m-0 grid list-none grid-cols-2 gap-2.5 p-0 md:grid-cols-4 md:gap-4">
+            {tiles.map(({ category, cover, count }) => (
+              <li key={category.id}>
+                <Link to={`/shop?cat=${category.slug}`} className="type-tile group relative block aspect-[4/5] overflow-hidden bg-photo">
+                  <Photo
+                    src={cover ? thumbUrl(cover) : undefined}
+                    fallbackSrc={cover ? imageUrl(cover) : undefined}
+                    alt=""
+                    className="transition-transform duration-500 group-hover:scale-105 [&_span]:hidden"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-ink px-3 py-2.5 text-white">
+                    <span className="font-display text-[15px] font-black uppercase leading-none md:text-lg">{category.name}</span>
+                    <span className="text-xs">{count}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section aria-labelledby="new-in" className="mx-auto max-w-6xl px-5 pb-12 pt-12">
         <div className="mb-5 flex items-baseline justify-between">
-          <h2 id="new-in" className="m-0 font-display text-[32px] font-black uppercase leading-none md:text-5xl">New in</h2>
+          <h2 id="new-in" className="m-0 font-display text-[28px] font-black uppercase leading-none md:text-5xl">
+            New in
+          </h2>
           <Link to="/shop" className="flex min-h-11 items-center gap-1 text-sm font-bold underline underline-offset-4">
             Shop all
           </Link>
@@ -67,22 +114,18 @@ export function Home() {
         )}
       </section>
 
-      {categories.length > 0 && (
-        <section aria-labelledby="by-type" className="mx-auto max-w-6xl px-5 pt-14">
-          <h2 id="by-type" className="m-0 mb-4 font-display text-[32px] font-black uppercase leading-none md:text-5xl">Shop by type</h2>
-          <ul className="m-0 list-none border-t-[1.5px] border-ink p-0">
-            {categories.map((c) => (
-              <li key={c.id}>
-                <Link to={`/shop?cat=${c.slug}`} className="type-row flex min-h-16 items-center justify-between gap-3 border-b-[1.5px] border-ink px-1">
-                  <span className="font-display text-[26px] font-black uppercase leading-none md:text-4xl">{c.name}</span>
-                  <span className="flex items-center gap-2 text-sm">
-                    {counts.get(c.id) ?? 0} {counts.get(c.id) === 1 ? 'piece' : 'pieces'}
-                    <ArrowRightIcon size={18} />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+      <DropBanner />
+
+      {highlight.data && (
+        <section aria-label="What customers say" className="bg-ink text-white">
+          <div className="mx-auto max-w-6xl px-5 py-10 md:py-14">
+            <Stars value={highlight.data.review.rating} size={18} light />
+            <p className="m-0 mt-3 max-w-3xl font-display text-[22px] font-extrabold leading-tight md:text-4xl">“{highlight.data.review.comment}”</p>
+            <p className="m-0 mt-3 text-xs text-[#bdbdb8]">
+              {highlight.data.review.customer_name} · Verified buyer · {highlight.data.average.toFixed(1)} average from {highlight.data.count}{' '}
+              {highlight.data.count === 1 ? 'review' : 'reviews'}
+            </p>
+          </div>
         </section>
       )}
 
@@ -91,90 +134,172 @@ export function Home() {
   )
 }
 
-/**
- * The first screen: a cut-out model standing in front of a clothes rail, with VRACK huge behind.
- * The model photo is uploaded in admin (Settings > Home page). Without it, the rail fills the space.
- * The rail shows the newest pieces in stock.
- */
-function Hero({ rail }: { rail: Product[] }) {
-  const ref = useRef<HTMLElement>(null)
-  const [hasModel, setHasModel] = useState(true)
-  useScrollProgress(ref)
+/** Each type with a photo of its newest piece and how many are in stock. */
+function typeTiles(categories: Category[], items: Product[]) {
+  return categories.map((category) => {
+    const mine = items.filter((p) => p.category_id === category.id)
+    const cover = mine.find((p) => totalStock(p) > 0 && sortedImages(p).length) ?? mine.find((p) => sortedImages(p).length)
+    const count = mine.filter((p) => totalStock(p) > 0).length
+    return { category, cover: cover ? sortedImages(cover)[0].path : null, count: `${count} ${count === 1 ? 'piece' : 'pieces'}` }
+  })
+}
 
-  // Without a model, spread the pieces across the rail; with one, keep the middle clear for them.
-  const spots = hasModel ? [12, 30, 70, 88] : [14, 38, 62, 86]
-
+/** A big photo card for the On the rack row. */
+function RackCard({ product: p, index }: { product: Product; index: number }) {
+  const img = sortedImages(p)[0]
+  const off = discountPercent(p.price, p.mrp)
   return (
-    <section ref={ref} aria-label="Vrack Clothing" className="hero relative overflow-hidden bg-surface">
-      <div className="relative mx-auto h-[min(150vw,600px)] max-w-6xl md:h-[640px]">
-        <p className="hero-word m-0 pt-6 text-center font-display font-black leading-[0.8]" aria-label="Vrack">
-          {'VRACK'.split('').map((l, i) => (
-            <span key={i} aria-hidden="true" className="hero-letter" style={{ '--i': i } as CSSProperties}>
-              {l}
-            </span>
-          ))}
-        </p>
-        <p className="m-0 mt-3 text-center font-brand text-xs font-semibold tracking-[0.3em] md:text-sm">CLOTHING</p>
-
-        <div className="absolute inset-x-0 top-[44%] md:top-[42%]">
-          <div className="h-[5px] bg-[#8c8c86]" />
-          {rail.map((p, i) => {
-            const img = sortedImages(p)[0]
-            return (
-              <Link
-                key={p.id}
-                to={`/p/${p.id}`}
-                aria-label={p.name}
-                className="rail-piece absolute top-0 flex w-[21%] max-w-[150px] -translate-x-1/2 flex-col items-center"
-                style={{ left: `${spots[i]}%`, '--i': i } as CSSProperties}
-              >
-                <svg viewBox="0 0 60 30" className="-mt-[11px] w-3/5 flex-none text-[#2a2a2a]" aria-hidden="true">
-                  <g fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M30 14 V9 A5 5 0 1 1 35 4" />
-                    <path d="M4 28 L30 14 L56 28" />
-                  </g>
-                </svg>
-                <img
-                  src={thumbUrl(img.path)}
-                  onError={(e) => {
-                    if (!e.currentTarget.src.endsWith(imageUrl(img.path))) e.currentTarget.src = imageUrl(img.path)
-                  }}
-                  alt=""
-                  className="aspect-[3/4] w-full object-cover shadow-[0_18px_24px_-18px_rgb(0_0_0/0.45)]"
-                />
-              </Link>
-            )
-          })}
-        </div>
-
-        {hasModel && (
-          <img
-            src={imageUrl(HERO_MODEL_PATH)}
-            alt=""
-            onError={() => setHasModel(false)}
-            className="hero-model pointer-events-none absolute bottom-0 left-1/2 h-[78%] w-auto max-w-none -translate-x-1/2 object-contain"
-          />
-        )}
-      </div>
-
-      <div className="relative bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-6 md:flex-row md:items-center md:justify-between">
-          <p className="m-0 max-w-xs text-[15px] leading-snug">Men's clothing, picked by hand. Book online, pick up in store.</p>
-          <div className="flex gap-2.5">
-            <Link to="/shop" className="flex h-12 flex-1 items-center justify-center whitespace-nowrap bg-ink px-3 text-[15px] font-bold text-white md:flex-none md:px-6">
-              Shop new in
-            </Link>
-            <a href="#by-type" className="flex h-12 flex-1 items-center justify-center whitespace-nowrap border-[1.5px] border-ink px-3 text-[15px] font-bold md:flex-none md:px-6">
-              Shop by type
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <Link to={`/p/${p.id}`} className="rise-on-scroll group flex flex-col gap-1.5" style={{ '--i': index } as CSSProperties}>
+      <span className="block aspect-[3/4] overflow-hidden bg-photo">
+        <Photo src={thumbUrl(img.path)} fallbackSrc={imageUrl(img.path)} alt={p.name} className="transition-transform duration-500 group-hover:scale-105" />
+      </span>
+      <span className="truncate text-sm font-semibold">{p.name}</span>
+      <span className="flex items-baseline gap-1.5">
+        <span className="font-display text-base font-black">{formatPrice(p.price)}</span>
+        {off !== null && p.mrp && <span className="text-xs text-muted line-through">{formatPrice(p.mrp)}</span>}
+      </span>
+    </Link>
   )
 }
 
-/** Sets --p on the element: 0 when its top is at the top of the screen, 1 once it has scrolled away. */
+/**
+ * The first screen, like a studio poster: corner labels, a big headline, and clothes hanging on a rail.
+ * The rail photo is uploaded in admin (Settings > Home page). Until then, the newest pieces hang on a drawn rail.
+ */
+function Hero({ rail, pieces }: { rail: Product[]; pieces: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [hasPhoto, setHasPhoto] = useState(true)
+  useScrollProgress(ref)
+  const [month] = useState(() => new Date().toLocaleString('en-IN', { month: 'short', year: 'numeric' }).toUpperCase())
+
+  return (
+    // The track is taller than the hero, so the hero holds still for a short scroll while the motion plays.
+    <div ref={ref} className="hero-track bg-studio relative pb-[260px] motion-reduce:pb-0">
+    <section aria-label="New on the rack" className="sticky top-16 overflow-hidden">
+      <div className="relative mx-auto flex max-w-6xl flex-col px-5 pb-6 pt-5 md:pt-8">
+        <div className="flex justify-between font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
+          <span>
+            New on
+            <br />
+            the rack
+          </span>
+          <span className="text-right">
+            {pieces > 0 ? `${pieces} ${pieces === 1 ? 'piece' : 'pieces'}` : 'Every week'}
+            <br />
+            {month}
+          </span>
+        </div>
+
+        <span aria-hidden="true" className="poster-in mt-9 text-center text-base tracking-[2px] md:mt-6" style={{ '--i': 0 } as CSSProperties}>
+          ✦✦✦
+        </span>
+        <h1 className="hero-headline relative z-[1] m-0 mt-2.5 text-center font-display text-[44px] font-black uppercase leading-[0.92] tracking-[-0.03em] md:text-[88px]">
+          <span className="poster-in block" style={{ '--i': 1 } as CSSProperties}>
+            The new
+          </span>
+          <span className="poster-in block" style={{ '--i': 2 } as CSSProperties}>
+            rack is in
+          </span>
+        </h1>
+        <p className="poster-in m-0 mx-auto mt-3.5 max-w-xs text-center text-[15px] leading-snug md:text-base" style={{ '--i': 3 } as CSSProperties}>
+          Hand-picked men's clothing. Book online, pick up in store.
+        </p>
+
+        <div className="relative -mx-5 mt-6 h-[300px] md:mx-0 md:mt-4 md:h-[440px]">
+          <p aria-hidden="true" className="hero-outline pointer-events-none absolute left-0 top-1/2 m-0 -translate-y-1/2 font-display font-black leading-none">
+            VRACK CLOTHING
+          </p>
+          {hasPhoto ? (
+            <img
+              src={imageUrl(HERO_RAIL_PATH)}
+              alt="This week's pieces hanging on the rail"
+              onError={() => setHasPhoto(false)}
+              className="rail-photo h-full w-full object-contain mix-blend-multiply"
+            />
+          ) : (
+            <DrawnRail rail={rail} />
+          )}
+        </div>
+
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <span className="font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
+            Never
+            <br />
+            basic
+          </span>
+          <span className="max-w-[11rem] text-center text-[11px] leading-snug md:max-w-xs md:text-[13px]">
+            Every piece checked by hand. Pay cash or UPI when you collect.
+          </span>
+          <Link to="/shop" className="flex min-h-11 items-end text-right font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
+            <span>
+              Shop
+              <br />
+              now →
+            </span>
+          </Link>
+        </div>
+      </div>
+    </section>
+    </div>
+  )
+}
+
+const TICKER = ['Book online', 'Pick up in store', 'Pay cash or UPI on pickup', 'New pieces every week']
+
+function Ticker() {
+  const line = [...TICKER, ...TICKER]
+  return (
+    <div className="relative z-[1] overflow-hidden bg-ink py-3 text-white" aria-label={TICKER.join(', ')}>
+      <div className="ticker flex w-max" aria-hidden="true">
+        {line.map((t, i) => (
+          <span key={i} className="px-6 font-display text-sm font-bold uppercase">
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Until a rail photo is uploaded: the newest pieces hang on a drawn rail. */
+function DrawnRail({ rail }: { rail: Product[] }) {
+  const spots = rail.length <= 2 ? [35, 65] : [14, 38, 62, 86]
+  return (
+    <div className="absolute inset-x-0 top-3">
+      <div className="h-[4px] bg-[#9a9a95]" />
+      {rail.map((p, i) => {
+        const img = sortedImages(p)[0]
+        return (
+          <Link
+            key={p.id}
+            to={`/p/${p.id}`}
+            aria-label={p.name}
+            className="rail-piece absolute top-0 flex w-[22%] max-w-[170px] -translate-x-1/2 flex-col items-center"
+            style={{ left: `${spots[i]}%`, '--i': i } as CSSProperties}
+          >
+            <svg viewBox="0 0 60 30" className="-mt-[11px] w-3/5 flex-none text-[#2a2a2a]" aria-hidden="true">
+              <g fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M30 14 V9 A5 5 0 1 1 35 4" />
+                <path d="M4 28 L30 14 L56 28" />
+              </g>
+            </svg>
+            <img
+              src={thumbUrl(img.path)}
+              onError={(e) => {
+                if (!e.currentTarget.src.endsWith(imageUrl(img.path))) e.currentTarget.src = imageUrl(img.path)
+              }}
+              alt=""
+              className="aspect-[3/4] w-full object-cover shadow-[0_22px_26px_-18px_rgb(0_0_0/0.45)]"
+            />
+          </Link>
+        )
+      })}
+      <div aria-hidden="true" className="absolute inset-x-[10%] top-[270px] h-6 rounded-[50%] bg-black/15 blur-xl md:top-[400px]" />
+    </div>
+  )
+}
+
+/** Sets --p on the hero track: 0 at the top of the page, 1 once its extra scroll has passed. */
 function useScrollProgress(ref: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current
@@ -183,7 +308,8 @@ function useScrollProgress(ref: React.RefObject<HTMLElement | null>) {
     const update = () => {
       frame = 0
       const r = el.getBoundingClientRect()
-      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height)))
+      const extra = parseFloat(getComputedStyle(el).paddingBottom) || r.height
+      const p = Math.min(1, Math.max(0, -r.top / extra))
       el.style.setProperty('--p', p.toFixed(3))
     }
     const onScroll = () => {
@@ -198,21 +324,4 @@ function useScrollProgress(ref: React.RefObject<HTMLElement | null>) {
       window.removeEventListener('resize', onScroll)
     }
   }, [ref])
-}
-
-const TICKER = ['Book online', 'Pick up in store', 'Pay cash or UPI on pickup', 'New pieces every week']
-
-function Ticker() {
-  const line = [...TICKER, ...TICKER]
-  return (
-    <div className="overflow-hidden bg-ink py-3 text-white" aria-label={TICKER.join(', ')}>
-      <div className="ticker flex w-max" aria-hidden="true">
-        {line.map((t, i) => (
-          <span key={i} className="px-6 font-display text-sm font-bold uppercase">
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
 }

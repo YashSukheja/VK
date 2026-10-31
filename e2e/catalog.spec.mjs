@@ -166,14 +166,16 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
   await desktop.close()
 })
 
-test('the home page shows the rail, new pieces and types; admin adds the model photo', async ({ page }) => {
+test('the home page shows the rail, new pieces and types; admin adds the rail photo', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
   // The rail hangs the newest pieces in stock; each opens its product.
-  const hero = page.getByRole('region', { name: 'Vrack Clothing' })
+  const hero = page.getByRole('region', { name: 'New on the rack' })
+  await expect(hero.getByRole('heading', { name: 'The new rack is in' })).toBeVisible()
   await expect(hero.getByRole('link', { name: 'Oxford Shirt, Sky Blue' })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Jeans \d+ piece/ })).toBeVisible()
-  await page.getByRole('link', { name: /^Jeans \d+ piece/ }).click()
+  await expect(page.getByRole('region', { name: 'On the rack' }).getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Jeans\s*\d+ piece/ })).toBeVisible()
+  await page.getByRole('link', { name: /^Jeans\s*\d+ piece/ }).click()
   await expect(page).toHaveURL(/\/shop\?cat=jeans$/)
   await expect(page.getByRole('heading', { name: 'Jeans' })).toBeVisible()
 
@@ -183,10 +185,10 @@ test('the home page shows the rail, new pieces and types; admin adds the model p
   await expect(card.getByText('No photo yet')).toBeVisible()
   await card.locator('input[type=file]').setInputFiles(fixture('model.png'))
   await expect(card.getByText('Home page photo saved.')).toBeVisible()
-  await expect(card.getByAltText('Home page model photo')).toBeVisible()
+  await expect(card.getByAltText('Home page rail photo')).toBeVisible()
 
   await page.goto('/')
-  await expect(page.locator('img.hero-model')).toBeVisible()
+  await expect(page.getByAltText("This week's pieces hanging on the rail")).toBeVisible()
   if (shots) await page.screenshot({ path: `${shots}/home-phone.png`, fullPage: true })
 })
 

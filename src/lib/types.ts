@@ -11,6 +11,8 @@ export type ProductImage = {
   id: string
   path: string
   sort_order: number
+  /** The plain phone photo of the item. Missing until setup file 8 has been run. */
+  is_real?: boolean
 }
 
 export type ProductSize = {
@@ -34,10 +36,18 @@ export type Product = {
   colour?: string | null
   /** Colours of the same item share this. */
   group_id?: string | null
+  /** Missing until setup file 8 has been run. */
+  measurements?: Measurements | null
+  /** The drop this piece is part of. Missing until setup file 8 has been run. */
+  drop_id?: string | null
   created_at: string
   product_images: ProductImage[]
   product_sizes: ProductSize[]
 }
+
+export type MeasureKey = 'chest' | 'shoulder' | 'length' | 'waist' | 'inseam'
+
+export type Measurements = { unit: 'in' | 'cm' } & Partial<Record<MeasureKey, number>>
 
 export type StoreSettings = {
   whatsapp_number: string | null
@@ -82,4 +92,10 @@ export type Customer = {
   mobile: string | null
   created_at: string
   bookings: { count: number }[]
+}
+
+export type Drop = {
+  id: string
+  name: string
+  starts_at: string
 }

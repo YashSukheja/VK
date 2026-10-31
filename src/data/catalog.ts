@@ -1,9 +1,12 @@
 import { supabase } from '../lib/supabase'
 import type { Category, Product, StoreSettings } from '../lib/types'
 
-const PRODUCT_COLUMNS =
+/** The home page model cut-out, uploaded in admin Settings. */
+export const HERO_MODEL_PATH = 'site/hero-model.webp'
+
+export const PRODUCT_COLUMNS =
   // `*` picks up newer columns like on_sale once their SQL has run, without breaking before.
-  '*, product_images(id, path, sort_order), product_sizes(id, size, stock, sort_order)'
+  '*, product_images(*), product_sizes(id, size, stock, sort_order)'
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message)
@@ -40,4 +43,12 @@ export async function fetchSettings(): Promise<StoreSettings> {
 /** All colours of one item, oldest first so the order stays put. */
 export async function fetchColours(groupId: string): Promise<Product[]> {
   return unwrap(await supabase.from('products').select(PRODUCT_COLUMNS).eq('group_id', groupId).order('created_at')) as Product[]
+}
+
+/** The logged-in customer's saved pieces, newest heart first. Hidden or deleted pieces drop out. */
+export async function fetchWishlist(): Promise<Product[]> {
+  const rows = unwrap(
+    await supabase.from('wishlist').select(`created_at, products(${PRODUCT_COLUMNS})`).order('created_at', { ascending: false }),
+  ) as unknown as { products: Product | null }[]
+  return rows.flatMap((r) => (r.products ? [r.products] : []))
 }

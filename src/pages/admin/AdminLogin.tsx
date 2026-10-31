@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 type Step = 'password' | 'enroll' | 'code'
 
 const inputClass =
-  'h-12 w-full rounded-[10px] border-[1.5px] border-field bg-white px-3 text-base outline-none focus:border-ink'
+  'h-12 w-full rounded-none border-[1.5px] border-field bg-white px-3 text-base outline-none focus:border-ink'
 
 export function AdminLogin() {
   const { session, role, aal, loading, refresh, signOut } = useAuth()
@@ -114,7 +114,7 @@ export function AdminLogin() {
               <input className={inputClass} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </label>
             {error && <p role="alert" className="m-0 text-sm font-semibold text-danger">{error}</p>}
-            <button disabled={busy} className="h-[54px] rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-60">
+            <button disabled={busy} className="h-[54px] rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-60">
               {busy ? 'Checking…' : 'Continue'}
             </button>
           </form>
@@ -136,7 +136,7 @@ export function AdminLogin() {
             )}
             <CodeInput value={code} onChange={setCode} />
             {error && <p role="alert" className="m-0 text-sm font-semibold text-danger">{error}</p>}
-            <button disabled={busy || code.length !== 6} className="h-[54px] rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-60">
+            <button disabled={busy || code.length !== 6} className="h-[54px] rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-60">
               {busy ? 'Checking…' : 'Finish setup'}
             </button>
           </form>
@@ -148,7 +148,7 @@ export function AdminLogin() {
             <p className="m-0 text-sm text-body">Open your authenticator app and type the 6-digit code for VK's Store.</p>
             <CodeInput value={code} onChange={setCode} />
             {error && <p role="alert" className="m-0 text-sm font-semibold text-danger">{error}</p>}
-            <button disabled={busy || code.length !== 6} className="h-[54px] rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-60">
+            <button disabled={busy || code.length !== 6} className="h-[54px] rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-60">
               {busy ? 'Checking…' : 'Log in'}
             </button>
             <button type="button" onClick={() => void signOut().then(() => setStep('password'))} className="min-h-11 text-sm font-bold underline underline-offset-4">

@@ -92,8 +92,14 @@ test('admin fills in store settings and adds products with photos and stock', as
   await expect(page.getByText('MRP must be a whole number')).toBeVisible()
 
   await page.goto('/admin/products/new')
-  await page.locator('input[type=file]').setInputFiles(fixture('jeans.jpg'))
+  await page.locator('input[type=file]').setInputFiles([fixture('jeans.jpg'), fixture('jeans.jpg')])
   await expect(page.getByText('COVER')).toBeVisible()
+  // The second photo is the plain phone photo.
+  await page.getByRole('button', { name: 'Photo 2 is the real photo' }).click()
+  await expect(page.getByRole('button', { name: 'Photo 2 is the real photo' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'cm', exact: true }).click()
+  await page.getByLabel(/^Waist/).fill('82')
+  await page.getByLabel(/^Length/).fill('104')
   await page.getByLabel('Name', { exact: true }).fill('Slim Jeans, Dark Wash')
   await page.getByLabel('Category').selectOption({ label: 'Jeans' })
   await page.getByLabel('MRP (optional)').fill('1999')
@@ -109,7 +115,7 @@ test('admin fills in store settings and adds products with photos and stock', as
 })
 
 test('shoppers browse by category and see sizes and prices', async ({ page, browser }) => {
-  await page.goto('/')
+  await page.goto('/shop')
   await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
   const shirt = page.getByRole('link', { name: /Oxford Shirt, Sky Blue/ })
   await expect(shirt).toBeVisible()
@@ -124,10 +130,22 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
 
   await page.getByRole('link', { name: 'Jeans', exact: true }).click()
   await expect(page).toHaveURL(/cat=jeans/)
-  await expect(page.getByText('1 item')).toBeVisible()
+  await expect(page.getByText('1 piece.')).toBeVisible()
   await expect(page.getByRole('link', { name: /Oxford Shirt/ })).toHaveCount(0)
 
-  await page.getByRole('link', { name: 'All', exact: true }).click()
+  // The jeans page shows the real photo label and the measurements.
+  await page.getByRole('link', { name: /Slim Jeans/ }).click()
+  await expect(page.getByAltText('Slim Jeans, Dark Wash, real photo 2 of 2')).toBeAttached()
+  await expect(page.getByText('Real photo')).toBeAttached()
+  const sizes = page.getByRole('region', { name: 'Measurements' })
+  await expect(sizes).toContainText('Waist82 cm')
+  await expect(sizes).toContainText('Length104 cm')
+  await expect(sizes.locator('dt')).toHaveText(['Length', 'Waist'])
+  await expect(page.getByRole('heading', { name: 'Goes well with' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Goes well with' }).getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/product-jeans-phone.png`, fullPage: true })
+
+  await page.goto('/shop')
   await shirt.click()
   await expect(page.getByRole('heading', { name: 'Oxford Shirt, Sky Blue' })).toBeVisible()
   await expect(page.getByText('YOU SAVE ₹750')).toBeVisible()
@@ -141,11 +159,35 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
   if (shots) await page.screenshot({ path: `${shots}/product-phone.png` })
 
   const desktop = await browser.newPage({ viewport: { width: 1280, height: 860 } })
-  await desktop.goto('http://localhost:5173/')
+  await desktop.goto('http://localhost:5173/shop')
   await expect(desktop.getByRole('link', { name: /Oxford Shirt/ })).toBeVisible()
   await desktop.waitForTimeout(300)
   if (shots) await desktop.screenshot({ path: `${shots}/shop-desktop.png` })
   await desktop.close()
+})
+
+test('the home page shows the rail, new pieces and types; admin adds the model photo', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
+  // The rail hangs the newest pieces in stock; each opens its product.
+  const hero = page.getByRole('region', { name: 'Vrack Clothing' })
+  await expect(hero.getByRole('link', { name: 'Oxford Shirt, Sky Blue' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Jeans \d+ piece/ })).toBeVisible()
+  await page.getByRole('link', { name: /^Jeans \d+ piece/ }).click()
+  await expect(page).toHaveURL(/\/shop\?cat=jeans$/)
+  await expect(page.getByRole('heading', { name: 'Jeans' })).toBeVisible()
+
+  await login(page)
+  await page.getByRole('link', { name: 'Settings' }).click()
+  const card = page.getByRole('region', { name: 'Home page' })
+  await expect(card.getByText('No photo yet')).toBeVisible()
+  await card.locator('input[type=file]').setInputFiles(fixture('model.png'))
+  await expect(card.getByText('Home page photo saved.')).toBeVisible()
+  await expect(card.getByAltText('Home page model photo')).toBeVisible()
+
+  await page.goto('/')
+  await expect(page.locator('img.hero-model')).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/home-phone.png`, fullPage: true })
 })
 
 test('shoppers search, filter by size, sort and share', async ({ page }) => {
@@ -156,7 +198,7 @@ test('shoppers search, filter by size, sort and share', async ({ page }) => {
       window.__shared = data
     }
   })
-  await page.goto('/')
+  await page.goto('/shop')
   const cards = page.locator('a[href^="/p/"]')
   await expect(cards).toHaveCount(2)
 
@@ -197,12 +239,12 @@ test('shoppers search, filter by size, sort and share', async ({ page }) => {
   await expect(cards).toHaveCount(1)
   // Picking another category keeps the sort but drops the size.
   await page.getByRole('link', { name: 'Jeans', exact: true }).click()
-  await expect(page).toHaveURL(/\/\?cat=jeans&sort=price-desc$/)
+  await expect(page).toHaveURL(/\/shop\?cat=jeans&sort=price-desc$/)
   if (shots) await page.screenshot({ path: `${shots}/shop-filters.png` })
 
   await cards.first().click()
   await page.getByRole('button', { name: 'Share' }).click()
   const shared = await page.evaluate(() => window.__shared)
-  expect(shared.text).toBe("Slim Jeans, Dark Wash for ₹799 at VK's Store")
+  expect(shared.text).toBe("Slim Jeans, Dark Wash for ₹799 at Vrack Clothing")
   expect(shared.url).toMatch(/^http:\/\/localhost:5173\/p\/[0-9a-f-]{36}$/)
 })

@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { discountPercent, formatPrice, LOW_STOCK, productTag, sortedImages, totalStock } from '../lib/format'
 import { imageUrl, thumbUrl } from '../lib/supabase'
 import type { Product } from '../lib/types'
+import { HeartButton } from './HeartButton'
 import { Photo } from './Photo'
 
 export function ProductCard({ product, index = 0, colours = [] }: { product: Product; index?: number; colours?: Product[] }) {
@@ -12,7 +13,7 @@ export function ProductCard({ product, index = 0, colours = [] }: { product: Pro
   const tag = productTag(product)
 
   return (
-    <div className={`flex flex-col gap-1.5 ${index < 8 ? 'rise' : 'rise-on-scroll'}`} style={{ '--i': index } as CSSProperties}>
+    <div className={`relative flex flex-col gap-1.5 ${index < 8 ? 'rise' : 'rise-on-scroll'}`} style={{ '--i': index } as CSSProperties}>
       <Link to={`/p/${product.id}`} className="group flex flex-col gap-1.5">
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-photo">
           <Photo src={cover ? thumbUrl(cover.path) : undefined} fallbackSrc={cover ? imageUrl(cover.path) : undefined} alt={product.name} className="transition-transform duration-300 group-hover:scale-[1.03]" />
@@ -20,7 +21,7 @@ export function ProductCard({ product, index = 0, colours = [] }: { product: Pro
             <span className="absolute left-2 top-2 rounded-md bg-ink px-2 py-1 text-[11px] font-extrabold uppercase text-white">Sold out</span>
           )}
           {stock > 0 && stock <= LOW_STOCK && (
-            <span className="absolute left-2 top-2 rounded-md bg-accent px-2 py-1 text-[11px] font-extrabold uppercase text-ink">
+            <span className="absolute left-2 top-2 bg-ink px-2 py-1 text-[11px] font-extrabold uppercase text-white">
               Only {stock} left
             </span>
           )}
@@ -37,6 +38,10 @@ export function ProductCard({ product, index = 0, colours = [] }: { product: Pro
           )}
         </span>
       </Link>
+      {/* Sits over the photo's bottom corner; outside the link so it doesn't open the product. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[3/4]">
+        <HeartButton productId={product.id} name={product.name} className="pointer-events-auto absolute bottom-1.5 right-1.5 !size-10 bg-white/90" />
+      </div>
       {colours.length > 1 && <ColourThumbs colours={colours} current={product.id} />}
     </div>
   )

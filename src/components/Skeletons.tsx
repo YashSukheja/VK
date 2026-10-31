@@ -23,7 +23,7 @@ export function ProductPageSkeleton() {
         <div className="shimmer h-7 w-1/3 rounded" />
         <div className="mt-3 flex gap-2">
           {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="shimmer size-12 rounded-[10px]" />
+            <div key={i} className="shimmer size-12 rounded-none" />
           ))}
         </div>
       </div>

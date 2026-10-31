@@ -10,6 +10,8 @@ const tabs = [
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/customers', label: 'Customers' },
   { to: '/admin/categories', label: 'Categories' },
+  { to: '/admin/drops', label: 'Drops' },
+  { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/settings', label: 'Settings' },
 ]
 
@@ -41,7 +43,7 @@ export function AdminLayout() {
             >
               {t.label}
               {t.to === '/admin/bookings' && waiting > 0 && (
-                <span aria-label={`${waiting} waiting`} className="pulse ml-1.5 rounded-full bg-accent px-1.5 text-xs font-black text-ink">
+                <span aria-label={`${waiting} waiting`} className="pulse ml-1.5 rounded-full bg-white px-1.5 text-xs font-black text-ink">
                   {waiting}
                 </span>
               )}
@@ -79,7 +81,7 @@ function usePendingCount(enabled: boolean): number {
     }
   }, [enabled])
   useEffect(() => {
-    document.title = count > 0 ? `(${count}) VK's Store admin` : "VK's Store admin"
+    document.title = count > 0 ? `(${count}) Vrack admin` : 'Vrack admin'
   }, [count])
   return count
 }

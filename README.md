@@ -1,13 +1,19 @@
-# VK's Store
+# Vrack Clothing
 
-A mobile-first shop website for VK's Store: customers browse clothes by category, see sizes and stock, and contact VK on WhatsApp. VK manages products, photos, size stock, categories and store details from a private admin area.
+A mobile-first shop website for Vrack Clothing (formerly VK's Store), a men's clothing resale shop: customers browse clothes by category, see sizes and stock, book online and contact the store on WhatsApp. VK manages products, photos, size stock, categories and store details from a private admin area.
 
 Built with React + TypeScript + Tailwind CSS (Vite), with Supabase for the database, logins and photo storage. Everything runs on free plans.
 
-## What's built (phases 2 to 5)
+Live at https://vrack.yashsukheja2.workers.dev (admin at `/admin`).
 
-- **Shop** (`/`): category bar on phones, sidebar on larger screens; "Only N left" and "Sold out" labels.
-- **Product page** (`/p/:id`): swipeable photos, MRP and saving, size buttons with stock, quantity, Add to cart.
+## What's built
+
+- **Home** (`/`): giant VRACK behind a clothes rail that hangs the 4 newest pieces in stock, a cut-out model photo in front (uploaded in Admin > Settings > Home page), a ticker, the next drop's countdown, New in and Shop by type. Motion is off for phones set to reduce motion.
+- **Shop** (`/shop`): search, size filter, sort, category tabs; "Only N left" and "Sold out" labels; hearts.
+- **Product page** (`/p/:id`): swipeable photos (a "Real photo" label on the plain phone photo), MRP and saving, colours, size buttons with stock, measurements, reviews, Goes well with, Add to cart.
+- **Wishlist**: hearts on cards and product pages; saved pieces under My account > Wishlist.
+- **Reviews**: customers with a Completed booking can review a piece once (1 to 5 stars and a comment). Admin > Reviews to reply or hide; 1 or 2 stars send a phone alert.
+- **Drops** (Admin > Drops): pieces that go live together at a set time. Until then they are hidden and can't be booked; the home page shows a countdown with Remind me.
 - **Customers**: create an account with username, mobile and password (`/register`); log in with username or mobile (`/login`). Supabase needs an email per login, so each customer gets a private placeholder address (`c-<random>@customers.vks-store.invalid`) they never see.
 - **Cart and booking** (`/cart`): cart kept on the phone; pickup or delivery, cash or UPI, a note. The database checks stock and sets prices. Each booking gets a code like `VK-1001` and starts as "Waiting for VK"; stock is taken off when VK confirms (phase 4). A customer can have 3 waiting bookings at most.
 - **Admin bookings** (`/admin/bookings`): Waiting / Confirmed / Done, with a count badge on the tab (refreshed every minute). Confirm takes the stock off, with the size rows locked so the last piece can't be confirmed twice; cards warn when stock is short or other waiting bookings want the same piece. Reject, Cancel (puts stock back), Mark collected/delivered. A "Tell customer" WhatsApp button follows each change.

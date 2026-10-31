@@ -7,16 +7,18 @@ import { fetchCategories, fetchProduct } from '../../data/catalog'
 import { sortedImages, sortedSizes } from '../../lib/format'
 import { compressPhoto, makeThumbnail, thumbPath } from '../../lib/images'
 import { IMAGE_BUCKET, imageUrl, supabase } from '../../lib/supabase'
-import type { Category, Product } from '../../lib/types'
+import { MEASURES } from '../../lib/measurements'
+import type { Category, MeasureKey, Measurements, Product } from '../../lib/types'
 import { useAsync } from '../../lib/useAsync'
 import { ColourGroup } from './ColourGroup'
 import { WaitingCustomers } from './WaitingCustomers'
 
 const MAX_PHOTOS = 8
 
-type Photo =
-  | { kind: 'saved'; key: string; id: string; path: string; url: string }
+type Photo = { real: boolean } & (
+  | { kind: 'saved'; key: string; id: string; path: string; url: string; wasReal: boolean }
   | { kind: 'new'; key: string; file: File; thumb: File; url: string }
+)
 
 type SizeRow = { size: string; stock: number }
 
@@ -85,7 +87,21 @@ function Editor({
     return sizesFor(categories.find((c) => c.id === template?.category_id) ?? categories[0], [])
   })
   const [photos, setPhotos] = useState<Photo[]>(() =>
-    product ? sortedImages(product).map((img) => ({ kind: 'saved', key: img.id, id: img.id, path: img.path, url: imageUrl(img.path) })) : [],
+    product
+      ? sortedImages(product).map((img) => ({
+          kind: 'saved',
+          key: img.id,
+          id: img.id,
+          path: img.path,
+          url: imageUrl(img.path),
+          real: !!img.is_real,
+          wasReal: !!img.is_real,
+        }))
+      : [],
+  )
+  const [unit, setUnit] = useState<Measurements['unit']>(base?.measurements?.unit ?? 'in')
+  const [measures, setMeasures] = useState<Partial<Record<MeasureKey, string>>>(() =>
+    Object.fromEntries(MEASURES.map((m) => [m.key, base?.measurements?.[m.key] ? String(base.measurements[m.key]) : ''])),
   )
   const [removed, setRemoved] = useState<{ id: string; path: string }[]>([])
   const [preparing, setPreparing] = useState(false)
@@ -118,7 +134,7 @@ function Editor({
       )
       setPhotos((current) => [
         ...current,
-        ...ready.map(({ file, thumb }) => ({ kind: 'new' as const, key: crypto.randomUUID(), file, thumb, url: URL.createObjectURL(file) })),
+        ...ready.map(({ file, thumb }) => ({ kind: 'new' as const, key: crypto.randomUUID(), file, thumb, url: URL.createObjectURL(file), real: false })),
       ])
     } catch {
       setMessage({ kind: 'error', text: 'One of those photos could not be read. Try a JPG or PNG.' })
@@ -135,6 +151,10 @@ function Editor({
       ;[next[index], next[target]] = [next[target], next[index]]
       return next
     })
+  }
+
+  function toggleReal(index: number) {
+    setPhotos((current) => current.map((p, i) => (i === index ? { ...p, real: !p.real } : p)))
   }
 
   function removePhoto(index: number) {
@@ -172,6 +192,13 @@ function Editor({
       // Extras saved outside admin_save_product: the SALE tag, the colour name and the colour group.
       const extras: Record<string, unknown> = {}
       if (onSale !== (product?.on_sale ?? false)) extras.on_sale = onSale
+      const sizesTaken: Measurements = { unit }
+      for (const m of MEASURES) {
+        const n = Number(measures[m.key])
+        if (measures[m.key] && n > 0) sizesTaken[m.key] = n
+      }
+      const measurements = Object.keys(sizesTaken).length > 1 ? sizesTaken : null
+      if (JSON.stringify(measurements) !== JSON.stringify(product?.measurements ?? null)) extras.measurements = measurements
       const colourName = colour.trim() || null
       if (colourName !== (product?.colour ?? null)) extras.colour = colourName
       if (template) {
@@ -194,8 +221,9 @@ function Editor({
 
       for (const [index, photo] of photos.entries()) {
         if (photo.kind === 'saved') {
-          const { error: orderError } = await supabase.from('product_images').update({ sort_order: index }).eq('id', photo.id)
-          if (orderError) throw new Error(orderError.message)
+          const changes = photo.real === photo.wasReal ? { sort_order: index } : { sort_order: index, is_real: photo.real }
+          const { error: orderError } = await supabase.from('product_images').update(changes).eq('id', photo.id)
+          if (orderError) throw new Error(setupMessage(orderError.message))
           continue
         }
         const path = `${productId}/${crypto.randomUUID()}.webp`
@@ -203,8 +231,9 @@ function Editor({
         if (upError) throw new Error(`Photo upload failed: ${upError.message}`)
         // The small copy is a nice-to-have: the shop falls back to the big photo without it.
         await supabase.storage.from(IMAGE_BUCKET).upload(thumbPath(path), photo.thumb, { contentType: 'image/webp' })
-        const { error: rowError } = await supabase.from('product_images').insert({ product_id: productId, path, sort_order: index })
-        if (rowError) throw new Error(rowError.message)
+        const row = { product_id: productId, path, sort_order: index, ...(photo.real ? { is_real: true } : {}) }
+        const { error: rowError } = await supabase.from('product_images').insert(row)
+        if (rowError) throw new Error(setupMessage(rowError.message))
       }
 
       navigate(`/admin/products/${productId}`, { replace: true, state: { saved: true } })
@@ -247,9 +276,18 @@ function Editor({
       <Card title="Photos" aside={<span className="text-xs text-muted">{photos.length}/{MAX_PHOTOS}</span>}>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photos.map((photo, i) => (
-            <div key={photo.key} className="relative aspect-[3/4] overflow-hidden rounded-[10px] bg-photo">
+            <div key={photo.key} className="relative aspect-[3/4] overflow-hidden rounded-none bg-photo">
               <img src={photo.url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
               {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold text-white">COVER</span>}
+              <button
+                type="button"
+                aria-pressed={photo.real}
+                aria-label={`Photo ${i + 1} is the real photo`}
+                onClick={() => toggleReal(i)}
+                className={`absolute inset-x-1 bottom-10 h-7 text-[10px] font-extrabold uppercase ${photo.real ? 'bg-ink text-white' : 'bg-white/90 text-ink'}`}
+              >
+                {photo.real ? 'Real photo ✓' : 'Mark as real'}
+              </button>
               <button type="button" aria-label={`Remove photo ${i + 1}`} onClick={() => removePhoto(i)} className="absolute right-1 top-1 flex size-8 items-center justify-center rounded-full bg-white/95">
                 <CloseIcon size={16} />
               </button>
@@ -264,14 +302,17 @@ function Editor({
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
-            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-[1.5px] border-dashed border-[#9a9a92] bg-white text-xs font-bold text-body">
+            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1 rounded-none border-[1.5px] border-dashed border-[#9a9a92] bg-white text-xs font-bold text-body">
               <PlusIcon />
               {preparing ? 'Preparing…' : 'Add photos'}
               <input type="file" accept="image/*" multiple className="sr-only" disabled={preparing} onChange={(e) => void addPhotos(e.target.files).then(() => (e.target.value = ''))} />
             </label>
           )}
         </div>
-        <span className="text-xs text-muted">The first photo is the cover. Photos are shrunk before upload to save data.</span>
+        <span className="text-xs text-muted">
+          The first photo is the cover: use the grey studio-style one made with Gemini. Add the plain phone photo too and tap Mark as real, so
+          shoppers see the true colour and condition. Photos are shrunk before upload to save data.
+        </span>
       </Card>
 
       <Card>
@@ -328,6 +369,34 @@ function Editor({
         )}
       </Card>
 
+      <Card title="Measurements (optional)">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted">Measure the piece laid flat. Fill only the ones that fit it.</span>
+          <div role="group" aria-label="Unit" className="flex flex-none border-[1.5px] border-ink">
+            {(['in', 'cm'] as const).map((u) => (
+              <button key={u} type="button" aria-pressed={unit === u} onClick={() => setUnit(u)} className={`h-9 w-12 text-sm font-extrabold ${unit === u ? 'bg-ink text-white' : ''}`}>
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {MEASURES.map((m) => (
+            <label key={m.key} className="flex flex-col gap-1.5 text-sm font-extrabold">
+              {m.label}
+              <input
+                className={fieldClass}
+                inputMode="decimal"
+                placeholder={unit}
+                value={measures[m.key] ?? ''}
+                onChange={(e) => setMeasures((cur) => ({ ...cur, [m.key]: e.target.value.replace(/[^\d.]/g, '').slice(0, 5) }))}
+              />
+              <span className="text-xs font-semibold text-muted">{m.hint}</span>
+            </label>
+          ))}
+        </div>
+      </Card>
+
       {product && <ColourGroup product={product} />}
 
       {product && <WaitingCustomers productId={product.id} productName={product.name} />}
@@ -355,6 +424,7 @@ function Editor({
 /** Turns "column does not exist" errors into which setup file to run. */
 function setupMessage(message: string): string {
   if (/colour|group_id/.test(message)) return 'Colours need setup file 7. Run it in Supabase first.'
+  if (/measurements|is_real/.test(message)) return 'Measurements and real photos need setup file 8. Run it in Supabase first.'
   if (/on_sale/.test(message)) return 'The SALE tag needs setup file 5. Run it in Supabase first.'
   return message
 }

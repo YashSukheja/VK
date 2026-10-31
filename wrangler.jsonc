@@ -1,10 +1,12 @@
 // Cloudflare Workers deploy: serves the built site from dist/.
 // The name must match the Worker in the Cloudflare dashboard.
 {
-  "name": "vk-s-store",
+  "name": "vrack",
   "compatibility_date": "2026-10-01",
-  // Turn on the free vk-s-store.<account>.workers.dev address.
+  // Turn on the free vrack.<account>.workers.dev address.
   "workers_dev": true,
+  // Lets Cloudflare build a preview link for each pull request.
+  "previews": {},
   "build": { "command": "npm run build" },
   "assets": {
     "directory": "./dist",

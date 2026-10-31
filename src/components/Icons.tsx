@@ -135,3 +135,15 @@ export const PinIcon = (p: IconProps) => (
     <circle cx="12" cy="9" r="2.5" />
   </svg>
 )
+
+export const MenuIcon = (p: IconProps) => (
+  <svg {...base({ strokeWidth: 1.8, ...p })}>
+    <path d="M3 8h18M3 16h12" />
+  </svg>
+)
+
+export const HeartIcon = ({ filled = false, ...p }: IconProps & { filled?: boolean }) => (
+  <svg {...base(p)} fill={filled ? 'currentColor' : 'none'}>
+    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+  </svg>
+)

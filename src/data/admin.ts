@@ -110,7 +110,7 @@ export async function downloadBackup(): Promise<{ rows: number }> {
     rows += all.length
   }
   const date = new Date().toISOString().slice(0, 10)
-  const blob = new Blob([JSON.stringify({ app: "VK's Store", made_at: new Date().toISOString(), tables }, null, 1)], {
+  const blob = new Blob([JSON.stringify({ app: "Vrack Clothing", made_at: new Date().toISOString(), tables }, null, 1)], {
     type: 'application/json',
   })
   const url = URL.createObjectURL(blob)

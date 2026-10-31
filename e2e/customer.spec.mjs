@@ -8,7 +8,7 @@ const customer = { username: `priya_${tail}`, mobile: `93${tail}77`, password: '
 const shots = process.env.SHOTS_DIR
 
 test('a shopper fills the cart, creates an account and books', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/shop')
   await page.getByRole('link', { name: /Oxford Shirt, Sky Blue/ }).click()
   await page.getByRole('button', { name: 'L', exact: true }).click()
   await page.getByRole('button', { name: 'Increase quantity' }).click()
@@ -18,7 +18,7 @@ test('a shopper fills the cart, creates an account and books', async ({ page }) 
   if (shots) await page.screenshot({ path: `${shots}/product-added.png` })
 
   // Only one pair of jeans in stock: after adding it, there's nothing more to add.
-  await page.goto('/')
+  await page.goto('/shop')
   await page.getByRole('link', { name: /Slim Jeans/ }).click()
   await page.getByRole('button', { name: 'Add to cart' }).click()
   await expect(page.getByText('Added 1 × size 32 to your cart')).toBeVisible()
@@ -52,14 +52,14 @@ test('a shopper fills the cart, creates an account and books', async ({ page }) 
   await page.getByLabel('Delivery address').fill('21 Lake View, Sector 9')
   await page.getByLabel('UPI').check()
   await expect(page.getByText('Pay to vkstore@okbank')).toBeVisible()
-  await page.getByLabel('Note for VK (optional)').fill('Evening is best')
+  await page.getByLabel('Note for the store (optional)').fill('Evening is best')
   if (shots) await page.screenshot({ path: `${shots}/cart.png`, fullPage: true })
   await page.getByRole('button', { name: 'Book now · ₹1,897' }).click()
 
   await expect(page.getByRole('heading', { name: 'Booked!' })).toBeVisible()
   const code = (await page.getByText(/^VK-\d+$/).textContent()).trim()
-  await expect(page.getByText('Waiting for VK')).toBeVisible()
-  const wa = page.getByRole('link', { name: 'Send to VK on WhatsApp' }).first()
+  await expect(page.getByText('Waiting for confirmation')).toBeVisible()
+  const wa = page.getByRole('link', { name: 'Send to Vrack on WhatsApp' }).first()
   const href = decodeURIComponent(await wa.getAttribute('href'))
   expect(href).toMatch(/^https:\/\/wa\.me\/919876543210\?text=/)
   expect(href).toContain(`New booking ${code}`)

@@ -143,12 +143,11 @@ button:not(:disabled):active,
 
 /* New page: slides in from the side. */
 .page-enter {
-  /* backwards, not both: once done, no transform stays behind to upset fixed bars. */
-  animation: page-enter 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  /* Fade only: a moving (transformed) page would shift fixed bars and the home page's pinned hero. */
+  animation: page-enter 0.25s ease-out backwards;
 }
 @keyframes page-enter {
-  from { opacity: 0; transform: translateX(18px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
 }
 
 /* Home page headline: words slide up one by one. */

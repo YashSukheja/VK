@@ -89,12 +89,15 @@ export function HeroShow({ pieces, play }: { pieces: number; play: boolean }) {
         </p>
       </div>
 
-      <img
-        src={src}
-        alt="This week's look: sage green shirt with washed black jeans"
-        onError={() => setSrc(DEMO_HERO_PHOTO)}
-        className="hero-figure absolute bottom-[68px] left-1/2 z-[1] h-[58%] w-auto max-w-none -translate-x-1/2 origin-[50%_30%] object-contain drop-shadow-[0_30px_24px_rgb(0_0_0/0.18)] md:bottom-[76px] md:h-[56%]"
-      />
+      {/* Centred by its box, not a CSS translate: GSAP turns translates into fixed pixels, which drift. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-[68px] z-[1] flex h-[58%] justify-center md:bottom-[76px] md:h-[56%]">
+        <img
+          src={src}
+          alt="This week's look: sage green shirt with washed black jeans"
+          onError={() => setSrc(DEMO_HERO_PHOTO)}
+          className="hero-figure h-full w-auto max-w-none origin-[50%_30%] object-contain drop-shadow-[0_30px_24px_rgb(0_0_0/0.18)]"
+        />
+      </div>
 
       <div className="absolute inset-x-0 bottom-0 z-[2] mx-auto flex max-w-6xl items-end justify-between gap-3 px-5 pb-4 md:pb-6">
         <span className="hero-corner font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">

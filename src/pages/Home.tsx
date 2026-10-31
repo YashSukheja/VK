@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { DropBanner } from '../components/DropBanner'
 import { HeroShow } from '../components/home/HeroShow'
@@ -17,11 +18,25 @@ import { fetchCategories, fetchProducts, fetchSettings } from '../data/catalog'
 import { fetchReviewWall } from '../data/reviews'
 import { coloursByGroup, groupKey } from '../lib/colours'
 import { sortedImages, totalStock } from '../lib/format'
-import type { Category, Product } from '../lib/types'
 import { useAsync } from '../lib/useAsync'
 import { useTitle } from '../lib/useTitle'
 
 const ON_RACK = 8
+const INTRO_KEY = 'vrack-intro-seen'
+
+/** Re-measures the scroll scenes top to bottom, so ones lower down count the hero's pinned stretch. */
+function refreshScenes() {
+  ScrollTrigger.sort()
+  ScrollTrigger.refresh()
+}
+
+function seenIntro() {
+  try {
+    return sessionStorage.getItem(INTRO_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 const NEW_IN = 6
 
 export function Home() {
@@ -30,8 +45,16 @@ export function Home() {
   const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])
   const settings = useAsync(fetchSettings, [])
   const reviews = useAsync(fetchReviewWall, [])
-  const [introDone, setIntroDone] = useState(false)
-  const endIntro = useCallback(() => setIntroDone(true), [])
+  // The logo intro plays once per visit, not every time someone comes back to the home page.
+  const [introDone, setIntroDone] = useState(() => seenIntro())
+  const endIntro = useCallback(() => {
+    try {
+      sessionStorage.setItem(INTRO_KEY, '1')
+    } catch {
+      // Private mode: it just plays again next time.
+    }
+    setIntroDone(true)
+  }, [])
   const [categories, products] = catalog.data ?? [[], []]
 
   // One product per item (colours share a card), newest first.
@@ -42,7 +65,24 @@ export function Home() {
   const inStock = useMemo(() => items.filter((p) => totalStock(p) > 0), [items])
   const withPhoto = useMemo(() => inStock.filter((p) => sortedImages(p).length > 0), [inStock])
   const colours = useMemo(() => coloursByGroup(products), [products])
-  const tiles = useMemo(() => typeTiles(categories, items), [categories, items])
+
+  // Scroll scenes measure where they sit on the page; measure again once the products and reviews load.
+  useEffect(() => {
+    let timer = 0
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer)
+      timer = window.setTimeout(refreshScenes, 150)
+    })
+    observer.observe(document.body)
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (introDone) refreshScenes()
+  }, [introDone])
 
   // Old shop links like /?cat=jeans now live at /shop.
   if (search) return <Navigate to={`/shop${search}`} replace />
@@ -53,10 +93,9 @@ export function Home() {
       <SiteHeader settings={settings.data} />
       <HeroShow pieces={inStock.length} play={introDone} />
       <Ticker />
+      {categories.length > 0 && <TypeList categories={categories} />}
 
       {withPhoto.length > 0 && <RackRing products={withPhoto.slice(0, ON_RACK)} total={inStock.length} />}
-
-      {tiles.some((t) => t.pieces > 0) && <TypeList rows={tiles.filter((t) => t.pieces > 0)} />}
 
       <section aria-labelledby="new-in" className="mx-auto max-w-6xl px-5 pb-12 pt-12">
         <div className="mb-5 flex items-baseline justify-between">
@@ -91,15 +130,6 @@ export function Home() {
   )
 }
 
-/** Each type with a photo of its newest piece and how many are in stock. */
-function typeTiles(categories: Category[], items: Product[]) {
-  return categories.map((category) => {
-    const mine = items.filter((p) => p.category_id === category.id)
-    const cover = mine.find((p) => totalStock(p) > 0 && sortedImages(p).length) ?? mine.find((p) => sortedImages(p).length)
-    const count = mine.filter((p) => totalStock(p) > 0).length
-    return { category, cover: cover ? sortedImages(cover)[0].path : null, pieces: count }
-  })
-}
 
 
 const TICKER = ['Book online', 'Pick up in store', 'Pay cash or UPI on pickup', 'New pieces every week']

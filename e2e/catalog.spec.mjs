@@ -176,8 +176,9 @@ test('the home page shows the mannequin photo, new pieces and types; admin chang
   await expect(heroPhoto).toHaveAttribute('src', '/demo/hero-mannequin.webp')
   expect(await heroPhoto.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
   await expect(page.getByRole('region', { name: 'On the rack' }).getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Jeans, \d+ piece/ })).toBeVisible()
-  await page.getByRole('link', { name: /^Jeans, \d+ piece/ }).click()
+  const types = page.getByRole('navigation', { name: 'Clothing types' })
+  await expect(types.getByRole('link', { name: 'Jeans', exact: true })).toBeVisible()
+  await types.getByRole('link', { name: 'Jeans', exact: true }).click()
   await expect(page).toHaveURL(/\/shop\?cat=jeans$/)
   await expect(page.getByRole('heading', { name: 'Jeans' })).toBeVisible()
 
@@ -206,6 +207,11 @@ test('the home page opens with the logo intro, which Skip ends', async ({ browse
   // The hero holds still while scrolling, then the page carries on with no blank gap.
   await page.mouse.wheel(0, 3000)
   await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
+  // Coming back to the home page later in the visit skips the intro.
+  await page.goto('/shop')
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Vrack Clothing', level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Skip' })).toHaveCount(0)
   await context.close()
 })
 

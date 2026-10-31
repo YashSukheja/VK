@@ -107,3 +107,51 @@ test('the admin replies and hides; low stars ping the phone', async () => {
   // The author still sees their own hidden review.
   assert.equal((await a.c.from('reviews').select('reply').eq('product_id', p.id)).data[0].reply, 'Sorry, come in and we will fix it.')
 })
+
+test('drop pieces stay hidden and unbookable until the drop starts', async () => {
+  const svc = service()
+  const a = await customer()
+  const p = await product()
+  const { data: drop } = await svc
+    .from('drops')
+    .insert({ name: `Drop ${stamp}`, starts_at: new Date(Date.now() + 3600_000).toISOString() })
+    .select()
+    .single()
+  await svc.from('products').update({ drop_id: drop.id }).eq('id', p.id)
+
+  assert.equal((await client().from('products').select('id').eq('id', p.id)).data.length, 0)
+  assert.equal((await a.c.from('product_images').select('id').eq('product_id', p.id)).data.length, 0)
+  const { data: upcoming } = await client().rpc('upcoming_drops')
+  const mine = upcoming.find((d) => d.id === drop.id)
+  assert.equal(mine.pieces, 1)
+  // Booking it by id anyway is refused.
+  const { error } = await a.c.rpc('place_booking', {
+    p_items: [{ product_id: p.id, size: 'M', quantity: 1 }],
+    p_fulfilment: 'pickup',
+    p_delivery_address: null,
+    p_payment_method: 'cash',
+    p_note: '',
+  })
+  assert.match(error.message, /no longer available/)
+
+  // Remind me: customers only, upcoming drops only, private.
+  assert.ifError((await a.c.from('drop_reminders').insert({ drop_id: drop.id })).error)
+  assert.equal((await client().from('drop_reminders').select('drop_id')).data?.length ?? 0, 0)
+  const b = await customer()
+  assert.equal((await b.c.from('drop_reminders').select('drop_id').eq('drop_id', drop.id)).data.length, 0)
+  assert.ok((await b.c.from('drop_reminders').insert({ drop_id: drop.id, customer_id: a.id })).error)
+
+  // Once the time comes, the piece is live and bookable.
+  await svc.from('drops').update({ starts_at: new Date(Date.now() - 1000).toISOString() }).eq('id', drop.id)
+  assert.equal((await client().from('products').select('id').eq('id', p.id)).data.length, 1)
+  const { error: bookError } = await a.c.rpc('place_booking', {
+    p_items: [{ product_id: p.id, size: 'M', quantity: 1 }],
+    p_fulfilment: 'pickup',
+    p_delivery_address: null,
+    p_payment_method: 'cash',
+    p_note: '',
+  })
+  assert.ifError(bookError)
+  // Too late to ask for a reminder now.
+  assert.ok((await b.c.from('drop_reminders').insert({ drop_id: drop.id })).error)
+})

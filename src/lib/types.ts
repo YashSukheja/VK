@@ -38,6 +38,8 @@ export type Product = {
   group_id?: string | null
   /** Missing until setup file 8 has been run. */
   measurements?: Measurements | null
+  /** The drop this piece is part of. Missing until setup file 8 has been run. */
+  drop_id?: string | null
   created_at: string
   product_images: ProductImage[]
   product_sizes: ProductSize[]
@@ -90,4 +92,10 @@ export type Customer = {
   mobile: string | null
   created_at: string
   bookings: { count: number }[]
+}
+
+export type Drop = {
+  id: string
+  name: string
+  starts_at: string
 }

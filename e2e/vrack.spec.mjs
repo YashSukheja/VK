@@ -121,3 +121,65 @@ test('VK replies to the low review, then hides it', async ({ page, browser }) =>
   await expect(shopper.getByText('A button was loose.')).toHaveCount(0)
   await shopper.close()
 })
+
+const localInput = (ms) => {
+  const d = new Date(Date.now() + ms)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
+test('VK sets up a drop: hidden with a countdown, Remind me, then live', async ({ page, browser }) => {
+  // Admin is still set up from the reviews test.
+  await page.goto('/admin/login')
+  await page.getByLabel('Email').fill(admin.email)
+  await page.getByLabel('Password').fill(admin.password)
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByLabel('6-digit code').fill(totp(secret))
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await expect(page.getByRole('heading', { name: 'Bookings' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Drops' }).click()
+  await page.getByLabel('Drop name').fill('Winter Drop')
+  await page.getByLabel('Goes live at').fill(localInput(2 * 86400_000))
+  await page.getByRole('button', { name: 'Create drop' }).click()
+  await expect(page.getByText('Drop created.')).toBeVisible()
+  await page.getByRole('checkbox', { name: new RegExp(JEANS) }).check()
+  await expect(page.getByText(/Goes live .* · 1 piece/)).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/admin-drops.png`, fullPage: true })
+
+  // Shoppers see the countdown, not the jeans.
+  const shopper = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  await shopper.goto('http://localhost:5173/')
+  const banner = shopper.getByRole('region', { name: 'Drop: Winter Drop' })
+  await expect(banner).toBeVisible()
+  await expect(banner.getByRole('timer')).toHaveAttribute('aria-label', /Starts in 1 days, 23 hours/)
+  await expect(banner).toContainText('1 piece')
+  await banner.scrollIntoViewIfNeeded()
+  if (shots) await shopper.screenshot({ path: `${shots}/home-drop.png` })
+  await shopper.goto('http://localhost:5173/shop')
+  await expect(shopper.getByRole('link', { name: /Oxford Shirt/ }).first()).toBeVisible()
+  await expect(shopper.getByRole('link', { name: /Slim Jeans/ })).toHaveCount(0)
+
+  // A customer asks to be reminded.
+  await shopper.goto('http://localhost:5173/')
+  await banner.getByRole('button', { name: 'Remind me' }).click()
+  await customerLogin(shopper)
+  await expect(banner.getByRole('button', { name: 'Remind me' })).toBeVisible()
+  await banner.getByRole('button', { name: 'Remind me' }).click()
+  await expect(banner.getByRole('button', { name: 'We’ll remind you ✓' })).toHaveAttribute('aria-pressed', 'true')
+
+  // VK moves the drop to now: it goes live by itself.
+  await page.reload()
+  await page.getByRole('button', { name: /Winter Drop/ }).click()
+  await expect(page.getByText('Remind me: 1 customer')).toBeVisible()
+  await page.getByLabel('Goes live at').last().fill(localInput(-60_000))
+  await page.getByRole('button', { name: 'Save drop' }).click()
+  await expect(page.getByText('Drop saved.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Tell' })).toHaveAttribute('href', /wa\.me\/91/)
+
+  await shopper.reload()
+  await banner.getByRole('link', { name: 'Shop the drop' }).click()
+  await expect(shopper.getByRole('heading', { name: 'Winter Drop' })).toBeVisible()
+  await expect(shopper.getByRole('link', { name: /Slim Jeans/ })).toBeVisible()
+  await expect(shopper.getByRole('link', { name: /Oxford Shirt/ })).toHaveCount(0)
+  await shopper.close()
+})

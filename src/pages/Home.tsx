@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
+import { DropBanner } from '../components/DropBanner'
 import { ArrowRightIcon } from '../components/Icons'
 import { ProductCard } from '../components/ProductCard'
 import { SiteFooter } from '../components/SiteFooter'
@@ -46,6 +47,7 @@ export function Home() {
       <SiteHeader settings={settings.data} />
       <Hero rail={railItems} />
       <Ticker />
+      <DropBanner />
 
       <section aria-labelledby="new-in" className="mx-auto max-w-6xl px-5 pt-12">
         <div className="mb-5 flex items-baseline justify-between">

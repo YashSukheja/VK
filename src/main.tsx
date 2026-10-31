@@ -54,6 +54,7 @@ const router = createBrowserRouter([
       { path: 'products/new', lazy: async () => ({ Component: (await import('./pages/admin/AdminProductEdit')).AdminProductEdit }) },
       { path: 'products/:id', lazy: async () => ({ Component: (await import('./pages/admin/AdminProductEdit')).AdminProductEdit }) },
       { path: 'categories', lazy: async () => ({ Component: (await import('./pages/admin/AdminCategories')).AdminCategories }) },
+      { path: 'drops', lazy: async () => ({ Component: (await import('./pages/admin/AdminDrops')).AdminDrops }) },
       { path: 'reviews', lazy: async () => ({ Component: (await import('./pages/admin/AdminReviews')).AdminReviews }) },
       { path: 'settings', lazy: async () => ({ Component: (await import('./pages/admin/AdminSettings')).AdminSettings }) },
     ],

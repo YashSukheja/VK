@@ -7,6 +7,7 @@ import { SiteHeader } from '../components/SiteHeader'
 import { ProductGridSkeleton } from '../components/Skeletons'
 import { Empty, ErrorBox } from '../components/States'
 import { fetchCategories, fetchProducts, fetchSettings } from '../data/catalog'
+import { fetchDrop } from '../data/drops'
 import { compareSizes, discountPercent, totalStock } from '../lib/format'
 import { coloursByGroup, groupKey } from '../lib/colours'
 import type { Product } from '../lib/types'
@@ -40,6 +41,8 @@ export function Shop() {
   const activeSlug = params.get('cat') ?? ''
   const query = params.get('q') ?? ''
   const size = params.get('size') ?? ''
+  const dropId = params.get('drop') ?? ''
+  const drop = useAsync(() => (dropId ? fetchDrop(dropId) : Promise.resolve(null)), [dropId])
   const sort: SortKey = SORTS.find((s) => s.key === params.get('sort'))?.key ?? ''
 
   /** Changes some filters in the link, keeping the rest. */
@@ -74,9 +77,9 @@ export function Shop() {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean)
     const categoryName = new Map(categories.map((c) => [c.id, c.name]))
     return products.filter(
-      (p) => (!active || p.category_id === active.id) && matches(p, words, categoryName.get(p.category_id) ?? ''),
+      (p) => (!active || p.category_id === active.id) && (!dropId || p.drop_id === dropId) && matches(p, words, categoryName.get(p.category_id) ?? ''),
     )
-  }, [products, categories, active, query])
+  }, [products, categories, active, query, dropId])
 
   // Size chips: every size in stock among those products, plus the picked one so it can be cleared.
   const sizes = useMemo(() => {
@@ -98,8 +101,8 @@ export function Shop() {
   // Every colour of each item, for the small photos under its card.
   const colours = useMemo(() => coloursByGroup(products), [products])
 
-  const filtering = !!(query || size)
-  const title = query ? 'Results' : active ? active.name : 'New in'
+  const filtering = !!(query || size || dropId)
+  const title = query ? 'Results' : drop.data ? drop.data.name : active ? active.name : 'New in'
 
   const links = [{ slug: '', name: 'All' }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))]
 
@@ -186,6 +189,17 @@ export function Shop() {
                     </span>
                   </label>
                 </div>
+                {dropId && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter({ drop: '' })}
+                    className="flex h-9 items-center gap-2 self-start bg-ink px-3 text-sm font-bold text-white"
+                    aria-label="Show everything, not only the drop"
+                  >
+                    Only this drop
+                    <CloseIcon size={14} />
+                  </button>
+                )}
                 {sizes.length > 0 && (
                   <div role="group" aria-label="Filter by size" className="no-scrollbar -mx-5 flex items-center gap-2 overflow-x-auto px-5 md:mx-0 md:flex-wrap md:px-0">
                     <span className="flex-none text-[13px] font-bold text-muted">Size</span>
@@ -209,7 +223,7 @@ export function Shop() {
                 <Empty>
                   Nothing matches{query && <> “{query}”</>}
                   {size && <> in size {size}</>}.{' '}
-                  <button type="button" onClick={() => setFilter({ q: '', size: '' })} className="font-extrabold underline underline-offset-4">
+                  <button type="button" onClick={() => setFilter({ q: '', size: '', drop: '' })} className="font-extrabold underline underline-offset-4">
                     Clear filters
                   </button>
                 </Empty>

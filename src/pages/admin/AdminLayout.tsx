@@ -10,6 +10,7 @@ const tabs = [
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/customers', label: 'Customers' },
   { to: '/admin/categories', label: 'Categories' },
+  { to: '/admin/drops', label: 'Drops' },
   { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/settings', label: 'Settings' },
 ]

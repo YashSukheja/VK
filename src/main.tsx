@@ -6,6 +6,7 @@ import { PageTransition } from './components/PageTransition'
 import { Loading } from './components/States'
 import { AuthProvider } from './lib/auth'
 import { CartProvider } from './lib/cart'
+import { WishlistProvider } from './lib/wishlist'
 import { Account } from './pages/Account'
 import { BookingDetail } from './pages/BookingDetail'
 import { Cart } from './pages/Cart'
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
       { path: 'products/new', lazy: async () => ({ Component: (await import('./pages/admin/AdminProductEdit')).AdminProductEdit }) },
       { path: 'products/:id', lazy: async () => ({ Component: (await import('./pages/admin/AdminProductEdit')).AdminProductEdit }) },
       { path: 'categories', lazy: async () => ({ Component: (await import('./pages/admin/AdminCategories')).AdminCategories }) },
+      { path: 'reviews', lazy: async () => ({ Component: (await import('./pages/admin/AdminReviews')).AdminReviews }) },
       { path: 'settings', lazy: async () => ({ Component: (await import('./pages/admin/AdminSettings')).AdminSettings }) },
     ],
   },
@@ -63,7 +65,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <CartProvider>
-        <RouterProvider router={router} />
+        <WishlistProvider>
+          <RouterProvider router={router} />
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   </StrictMode>,

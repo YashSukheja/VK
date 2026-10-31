@@ -99,6 +99,11 @@ export function BookingDetail() {
               <span className="block text-[13px] text-muted">
                 Size {i.size} · Qty {i.quantity}
               </span>
+              {b.status === 'completed' && i.product_id && (
+                <Link to={`/p/${i.product_id}#reviews`} className="mt-1 inline-flex min-h-9 items-center text-[13px] font-extrabold underline underline-offset-4">
+                  Leave a review
+                </Link>
+              )}
             </span>
             <span className="font-bold">{formatPrice(i.price * i.quantity)}</span>
           </li>

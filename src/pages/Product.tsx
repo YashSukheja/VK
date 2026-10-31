@@ -2,7 +2,9 @@ import { useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { BackIcon, CheckIcon, ChatIcon, InfoIcon, ShareIcon } from '../components/Icons'
 import { Photo } from '../components/Photo'
+import { HeartButton } from '../components/HeartButton'
 import { RestockRequest } from '../components/RestockRequest'
+import { Reviews } from '../components/Reviews'
 import { CartButton, SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { ProductPageSkeleton } from '../components/Skeletons'
@@ -171,6 +173,8 @@ export function ProductPage() {
               ) : (
                 <span />
               )}
+              <span className="flex items-center gap-2">
+              <HeartButton productId={p.id} name={displayName(p)} className="border-[1.5px] border-field" />
               <button
                 type="button"
                 onClick={() => void shareProduct(displayName(p), p.price, p.id)}
@@ -179,6 +183,7 @@ export function ProductPage() {
                 <ShareIcon size={16} />
                 Share
               </button>
+              </span>
             </div>
             <h1 className="m-0 font-display text-[28px] font-black uppercase leading-[0.95] md:text-5xl">{p.name}</h1>
             <div className="flex flex-wrap items-center gap-2.5">
@@ -344,6 +349,8 @@ export function ProductPage() {
               .
             </p>
           )}
+
+          <Reviews productIds={colours.length > 1 ? colours.map((c) => c.id) : [p.id]} />
 
           {/* Fixed action bar on phones, inline on larger screens. */}
           <div className="fixed inset-x-0 bottom-0 z-10 flex items-center gap-3.5 border-t border-line bg-white px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-3 md:static md:border-0 md:p-0">

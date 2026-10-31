@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:db": "node --test tests/*.test.mjs",
+    "test:db": "node --test --test-concurrency=1 tests/*.test.mjs",
     "test:e2e": "supabase db reset && playwright test",
     "db:start": "supabase start",
     "db:reset": "supabase db reset"

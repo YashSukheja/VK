@@ -165,3 +165,60 @@ export async function fetchSalesSince(since: Date): Promise<Sale[]> {
       .limit(2000),
   ) as Sale[]
 }
+
+/** Which demo photos suit a type of clothing: tops get the shirt, bottoms the jeans, the rest the full look. */
+function demoSetFor(category: string): 'shirt' | 'jeans' | 'look' {
+  if (/jean|trouser|pant|short|cargo|chino|jogger|bottom|denim/i.test(category)) return 'jeans'
+  if (/shirt|tee|top|polo|jacket|hoodie|sweat|kurta|blazer|coat|overshirt/i.test(category)) return 'shirt'
+  return 'look'
+}
+
+/**
+ * Removes every product photo (files and their small copies), then gives each product the built-in
+ * mannequin photos (front and back) that suit its type. Stock, prices and bookings are not touched.
+ */
+export async function replaceWithDemoPhotos(onProgress: (done: number, total: number) => void): Promise<{ removed: number; products: number }> {
+  const old = unwrap(await supabase.from('product_images').select('id, path')) as { id: string; path: string }[]
+  const files = old.flatMap((r) => [r.path, thumbPath(r.path)])
+  for (let i = 0; i < files.length; i += 100) {
+    const { error } = await supabase.storage.from(IMAGE_BUCKET).remove(files.slice(i, i + 100))
+    if (error) throw new Error(error.message)
+  }
+  for (let i = 0; i < old.length; i += 100) {
+    const ids = old.slice(i, i + 100).map((r) => r.id)
+    unwrap(await supabase.from('product_images').delete().in('id', ids))
+  }
+
+  const categories = unwrap(await supabase.from('categories').select('id, name, slug')) as { id: string; name: string; slug: string }[]
+  const products = unwrap(await supabase.from('products').select('id, category_id')) as { id: string; category_id: string }[]
+  const typeOf = new Map(categories.map((c) => [c.id, `${c.slug} ${c.name}`]))
+
+  // Download each demo photo once and make its small copy once.
+  const cache = new Map<string, { big: Blob; small: File }>()
+  async function demo(name: string) {
+    let hit = cache.get(name)
+    if (!hit) {
+      const res = await fetch(`/demo/${name}.webp`)
+      if (!res.ok) throw new Error(`Couldn't load the demo photo ${name}.`)
+      const big = await res.blob()
+      hit = { big, small: await makeThumbnail(big) }
+      cache.set(name, hit)
+    }
+    return hit
+  }
+
+  for (const [i, p] of products.entries()) {
+    onProgress(i, products.length)
+    const set = demoSetFor(typeOf.get(p.category_id) ?? '')
+    for (const [order, side] of (['front', 'back'] as const).entries()) {
+      const { big, small } = await demo(`${set}-${side}`)
+      const path = `${p.id}/${crypto.randomUUID()}.webp`
+      const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, big, { contentType: 'image/webp' })
+      if (error) throw new Error(`Photo upload failed: ${error.message}`)
+      await supabase.storage.from(IMAGE_BUCKET).upload(thumbPath(path), small, { contentType: 'image/webp' })
+      unwrap(await supabase.from('product_images').insert({ product_id: p.id, path, sort_order: order }))
+    }
+  }
+  onProgress(products.length, products.length)
+  return { removed: old.length, products: products.length }
+}

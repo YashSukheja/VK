@@ -199,26 +199,14 @@ button:not(:disabled):active,
   -webkit-text-stroke: 1.5px rgb(0 0 0 / 0.28);
   transform: translateX(calc(8% - var(--p, 0) * 55%));
 }
-.rail-photo {
-  transform: translateY(calc(var(--p, 0) * -36px)) scale(calc(1 + var(--p, 0) * 0.1));
-  animation: rail-in 1.3s 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.hero-photo {
+  transform: translateY(calc(var(--p, 0) * -40px)) scale(calc(1 + var(--p, 0) * 0.12));
+  transform-origin: 50% 100%;
+  animation: hero-photo-in 1.2s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-@keyframes rail-in {
-  0% { opacity: 0; translate: 0 -34px; rotate: -1.5deg; }
-  60% { opacity: 1; rotate: 0.6deg; }
-  100% { opacity: 1; translate: 0 0; rotate: 0deg; }
-}
-.rail-piece {
-  transform-origin: 50% 0;
-  transform: rotate(calc(var(--p, 0) * 6deg * (var(--i, 0) - 1.5)));
-  animation: sway 1.6s cubic-bezier(0.3, 0.7, 0.3, 1) both;
-  animation-delay: calc(300ms + var(--i, 0) * 120ms);
-}
-@keyframes sway {
-  0% { opacity: 0; rotate: -14deg; }
-  35% { opacity: 1; rotate: 8deg; }
-  65% { rotate: -4deg; }
-  100% { opacity: 1; rotate: 0deg; }
+@keyframes hero-photo-in {
+  from { opacity: 0; translate: 0 60px; }
+  to { opacity: 1; translate: 0 0; }
 }
 .ticker {
   animation: ticker 22s linear infinite;

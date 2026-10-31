@@ -1,10 +1,10 @@
 import imageCompression from 'browser-image-compression'
 import { useState, type ChangeEvent } from 'react'
 import { Card, Notice } from '../../components/admin'
-import { HERO_RAIL_PATH } from '../../data/catalog'
+import { HERO_PHOTO_PATH } from '../../data/catalog'
 import { IMAGE_BUCKET, imageUrl, supabase } from '../../lib/supabase'
 
-/** The photo of clothes on a rail at the top of the home page. */
+/** The big photo at the top of the home page. */
 export function HeroSettings() {
   const [version, setVersion] = useState(() => Date.now())
   const [hasPhoto, setHasPhoto] = useState(true)
@@ -18,11 +18,11 @@ export function HeroSettings() {
     setMessage(null)
     setBusy(true)
     try {
-      const small = await imageCompression(file, { maxSizeMB: 0.6, maxWidthOrHeight: 2000, useWebWorker: true, fileType: 'image/webp', initialQuality: 0.85 })
+      const small = await imageCompression(file, { maxSizeMB: 0.6, maxWidthOrHeight: 2000, useWebWorker: true, fileType: 'image/webp', initialQuality: 0.85, preserveExif: false })
       // Replace by removing then adding: an upsert needs read rights on the file list, which the shop does not give out.
       const bucket = supabase.storage.from(IMAGE_BUCKET)
-      await bucket.remove([HERO_RAIL_PATH])
-      const { error } = await bucket.upload(HERO_RAIL_PATH, small, { contentType: 'image/webp', cacheControl: '60' })
+      await bucket.remove([HERO_PHOTO_PATH])
+      const { error } = await bucket.upload(HERO_PHOTO_PATH, small, { contentType: 'image/webp', cacheControl: '60' })
       if (error) throw error
       setHasPhoto(true)
       setVersion(Date.now())
@@ -36,26 +36,26 @@ export function HeroSettings() {
   async function remove() {
     setMessage(null)
     setBusy(true)
-    const { error } = await supabase.storage.from(IMAGE_BUCKET).remove([HERO_RAIL_PATH])
+    const { error } = await supabase.storage.from(IMAGE_BUCKET).remove([HERO_PHOTO_PATH])
     setBusy(false)
     if (error) return setMessage({ kind: 'error', text: error.message })
     setHasPhoto(false)
-    setMessage({ kind: 'ok', text: 'Photo removed. The home page hangs your newest pieces on a drawn rail now.' })
+    setMessage({ kind: 'ok', text: 'Photo removed. The home page shows the built-in mannequin photo now.' })
   }
 
   return (
     <Card title="Home page">
       <p className="m-0 text-sm text-body">
-        The big photo at the top of the home page: 3 to 5 pieces hanging on a rail, on a plain light grey background, in a wide photo.
-        Until you add one, the home page hangs your 4 newest pieces on a drawn rail.
+        The tall photo in the middle of the home page. It looks best as a cut-out (PNG with no background) of a mannequin or model.
+        Until you add one, the home page shows the built-in mannequin photo.
       </p>
       <div className="flex items-end gap-4">
-        <div className="flex h-28 w-40 flex-none items-center justify-center overflow-hidden bg-surface">
+        <div className="flex h-40 w-28 flex-none items-center justify-center overflow-hidden bg-surface">
           {hasPhoto ? (
             <img
               key={version}
-              src={`${imageUrl(HERO_RAIL_PATH)}?v=${version}`}
-              alt="Home page rail photo"
+              src={`${imageUrl(HERO_PHOTO_PATH)}?v=${version}`}
+              alt="Home page photo"
               onError={() => setHasPhoto(false)}
               className="h-full w-auto object-contain"
             />

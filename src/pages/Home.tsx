@@ -8,7 +8,7 @@ import { SiteHeader } from '../components/SiteHeader'
 import { ProductGridSkeleton } from '../components/Skeletons'
 import { Stars } from '../components/Stars'
 import { ErrorBox } from '../components/States'
-import { fetchCategories, fetchProducts, fetchSettings, HERO_RAIL_PATH } from '../data/catalog'
+import { fetchCategories, fetchProducts, fetchSettings, DEMO_HERO_PHOTO, HERO_PHOTO_PATH } from '../data/catalog'
 import { fetchReviewHighlight } from '../data/reviews'
 import { coloursByGroup, groupKey } from '../lib/colours'
 import { discountPercent, formatPrice, sortedImages, totalStock } from '../lib/format'
@@ -19,7 +19,6 @@ import { useTitle } from '../lib/useTitle'
 
 const ON_RACK = 8
 const NEW_IN = 6
-const RAIL = 4
 
 export function Home() {
   const { search } = useLocation()
@@ -45,7 +44,7 @@ export function Home() {
   return (
     <div className="min-h-dvh bg-white">
       <SiteHeader settings={settings.data} />
-      <Hero rail={withPhoto.slice(0, RAIL)} pieces={inStock.length} />
+      <Hero pieces={inStock.length} />
       <Ticker />
 
       {withPhoto.length > 0 && (
@@ -163,12 +162,12 @@ function RackCard({ product: p, index }: { product: Product; index: number }) {
 }
 
 /**
- * The first screen, like a studio poster: corner labels, a big headline, and clothes hanging on a rail.
- * The rail photo is uploaded in admin (Settings > Home page). Until then, the newest pieces hang on a drawn rail.
+ * The first screen, like a studio poster: corner labels, a big headline, and the mannequin photo.
+ * A photo uploaded in admin (Settings > Home page) replaces the built-in one.
  */
-function Hero({ rail, pieces }: { rail: Product[]; pieces: number }) {
+function Hero({ pieces }: { pieces: number }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [hasPhoto, setHasPhoto] = useState(true)
+  const [src, setSrc] = useState(() => imageUrl(HERO_PHOTO_PATH))
   useScrollProgress(ref)
   const [month] = useState(() => new Date().toLocaleString('en-IN', { month: 'short', year: 'numeric' }).toUpperCase())
 
@@ -205,20 +204,16 @@ function Hero({ rail, pieces }: { rail: Product[]; pieces: number }) {
           Hand-picked men's clothing. Book online, pick up in store.
         </p>
 
-        <div className="relative -mx-5 mt-6 h-[300px] md:mx-0 md:mt-4 md:h-[440px]">
+        <div className="relative -mx-5 mt-4 h-[420px] md:mx-0 md:h-[560px]">
           <p aria-hidden="true" className="hero-outline pointer-events-none absolute left-0 top-1/2 m-0 -translate-y-1/2 font-display font-black leading-none">
             VRACK CLOTHING
           </p>
-          {hasPhoto ? (
-            <img
-              src={imageUrl(HERO_RAIL_PATH)}
-              alt="This week's pieces hanging on the rail"
-              onError={() => setHasPhoto(false)}
-              className="rail-photo h-full w-full object-contain mix-blend-multiply"
-            />
-          ) : (
-            <DrawnRail rail={rail} />
-          )}
+          <img
+            src={src}
+            alt="This week's look: sage green shirt with washed black jeans"
+            onError={() => setSrc(DEMO_HERO_PHOTO)}
+            className="hero-photo relative h-full w-full object-contain drop-shadow-[0_30px_24px_rgb(0_0_0/0.18)]"
+          />
         </div>
 
         <div className="mt-2 flex items-end justify-between gap-3">
@@ -257,44 +252,6 @@ function Ticker() {
           </span>
         ))}
       </div>
-    </div>
-  )
-}
-
-/** Until a rail photo is uploaded: the newest pieces hang on a drawn rail. */
-function DrawnRail({ rail }: { rail: Product[] }) {
-  const spots = rail.length <= 2 ? [35, 65] : [14, 38, 62, 86]
-  return (
-    <div className="absolute inset-x-0 top-3">
-      <div className="h-[4px] bg-[#9a9a95]" />
-      {rail.map((p, i) => {
-        const img = sortedImages(p)[0]
-        return (
-          <Link
-            key={p.id}
-            to={`/p/${p.id}`}
-            aria-label={p.name}
-            className="rail-piece absolute top-0 flex w-[22%] max-w-[170px] -translate-x-1/2 flex-col items-center"
-            style={{ left: `${spots[i]}%`, '--i': i } as CSSProperties}
-          >
-            <svg viewBox="0 0 60 30" className="-mt-[11px] w-3/5 flex-none text-[#2a2a2a]" aria-hidden="true">
-              <g fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M30 14 V9 A5 5 0 1 1 35 4" />
-                <path d="M4 28 L30 14 L56 28" />
-              </g>
-            </svg>
-            <img
-              src={thumbUrl(img.path)}
-              onError={(e) => {
-                if (!e.currentTarget.src.endsWith(imageUrl(img.path))) e.currentTarget.src = imageUrl(img.path)
-              }}
-              alt=""
-              className="aspect-[3/4] w-full object-cover shadow-[0_22px_26px_-18px_rgb(0_0_0/0.45)]"
-            />
-          </Link>
-        )
-      })}
-      <div aria-hidden="true" className="absolute inset-x-[10%] top-[270px] h-6 rounded-[50%] bg-black/15 blur-xl md:top-[400px]" />
     </div>
   )
 }

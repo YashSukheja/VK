@@ -183,3 +183,37 @@ test('VK sets up a drop: hidden with a countdown, Remind me, then live', async (
   await expect(shopper.getByRole('link', { name: /Oxford Shirt/ })).toHaveCount(0)
   await shopper.close()
 })
+
+test('VK swaps every product photo for the mannequin demo photos', async ({ page }) => {
+  const svc = service()
+  const { data: before } = await svc.from('product_images').select('path')
+  expect(before.length).toBeGreaterThan(0)
+
+  await page.goto('/admin/login')
+  await page.getByLabel('Email').fill(admin.email)
+  await page.getByLabel('Password').fill(admin.password)
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByLabel('6-digit code').fill(totp(secret))
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await expect(page.getByRole('heading', { name: 'Bookings' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Settings' }).click()
+  const card = page.getByRole('region', { name: 'Demo photos' })
+  await card.getByRole('button', { name: 'Use demo photos for every item' }).click()
+  await card.getByRole('button', { name: 'Yes, delete and replace' }).click()
+  await expect(card.getByText(/^Done\. \d+ old photos removed/)).toBeVisible({ timeout: 30_000 })
+
+  // Old files are gone; every item has a front and back photo.
+  const { data: after } = await svc.from('product_images').select('path, product_id')
+  const { count } = await svc.from('products').select('id', { count: 'exact', head: true })
+  expect(after.length).toBe(count * 2)
+  const oldPaths = new Set(before.map((r) => r.path))
+  expect(after.some((r) => oldPaths.has(r.path))).toBe(false)
+  const { data: gone } = await svc.storage.from('product-images').download(before[0].path)
+  expect(gone).toBeNull()
+
+  await page.goto('/shop')
+  const photo = page.getByRole('link', { name: /Slim Jeans/ }).locator('img').first()
+  await expect(photo).toBeVisible()
+  expect(await photo.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
+})

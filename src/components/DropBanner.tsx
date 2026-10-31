@@ -32,7 +32,7 @@ function Banner({ drop }: { drop: UpcomingDrop }) {
       <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-10 md:flex-row md:items-end md:justify-between md:py-14">
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#bdbdb8]">{done ? 'Live now' : 'Next drop'}</span>
-          <h2 className="m-0 font-display text-[44px] font-black uppercase leading-[0.85] md:text-7xl">{drop.name}</h2>
+          <h2 className="m-0 font-display text-[44px] font-black uppercase leading-[0.85] [overflow-wrap:anywhere] md:text-7xl">{drop.name}</h2>
           <span className="text-sm text-[#d9d9d4]">
             {drop.pieces} {drop.pieces === 1 ? 'piece' : 'pieces'} · {done ? 'out now' : when}
           </span>

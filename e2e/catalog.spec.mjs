@@ -171,7 +171,7 @@ test('the home page shows the mannequin photo, new pieces and types; admin chang
   await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
   // Until a photo is uploaded, the built-in mannequin photo shows.
   const hero = page.getByRole('region', { name: 'New on the rack' })
-  await expect(hero.getByRole('heading', { name: 'The new rack is in' })).toBeVisible()
+  await expect(hero.getByRole('heading', { name: 'Vrack Clothing' })).toBeVisible()
   const heroPhoto = hero.getByAltText("This week's look: sage green shirt with washed black jeans")
   await expect(heroPhoto).toHaveAttribute('src', '/demo/hero-mannequin.webp')
   expect(await heroPhoto.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
@@ -192,6 +192,21 @@ test('the home page shows the mannequin photo, new pieces and types; admin chang
   await page.goto('/')
   await expect(page.getByAltText("This week's look: sage green shirt with washed black jeans")).toHaveAttribute('src', /site\/hero-photo\.webp$/)
   if (shots) await page.screenshot({ path: `${shots}/home-phone.png`, fullPage: true })
+})
+
+test('the home page opens with the logo intro, which Skip ends', async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } })
+  const page = await context.newPage()
+  await page.goto('/')
+  const skip = page.getByRole('button', { name: 'Skip' })
+  await expect(skip).toBeVisible()
+  await skip.click()
+  await expect(skip).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Vrack Clothing', level: 1 })).toBeVisible()
+  // The hero holds still while scrolling, then the page carries on with no blank gap.
+  await page.mouse.wheel(0, 3000)
+  await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
+  await context.close()
 })
 
 test('shoppers search, filter by size, sort and share', async ({ page }) => {

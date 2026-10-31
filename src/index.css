@@ -170,43 +170,9 @@ button:not(:disabled):active,
   margin-bottom: -0.12em;
 }
 
-/* ---------------------------------------------------------------------------
-   Home page hero: a studio poster with clothes on a rail. The hero sticks for a
-   short scroll while --p goes 0 to 1 (set in Home.tsx): the headline grows, the
-   outlined VRACK slides past behind the rail and the rail photo lifts.
-   --------------------------------------------------------------------------- */
+/* Home page hero: a light grey studio. Its motion lives in components/home (GSAP). */
 .bg-studio {
   background: linear-gradient(#e4e4e2, #d8d8d6 72%, #e6e6e4);
-}
-.poster-in {
-  animation: poster-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i, 0) * 90ms);
-}
-@keyframes poster-in {
-  from { opacity: 0; transform: translateY(60%); }
-  to { opacity: 1; transform: none; }
-}
-.hero-headline {
-  transform: translateY(calc(var(--p, 0) * -16px)) scale(calc(1 + var(--p, 0) * 0.28));
-  transform-origin: 50% 0;
-}
-.hero-outline {
-  font-size: clamp(110px, 34vw, 340px);
-  font-stretch: 125%;
-  letter-spacing: -0.06em;
-  white-space: nowrap;
-  color: transparent;
-  -webkit-text-stroke: 1.5px rgb(0 0 0 / 0.28);
-  transform: translateX(calc(8% - var(--p, 0) * 55%));
-}
-.hero-photo {
-  transform: translateY(calc(var(--p, 0) * -40px)) scale(calc(1 + var(--p, 0) * 0.12));
-  transform-origin: 50% 100%;
-  animation: hero-photo-in 1.2s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@keyframes hero-photo-in {
-  from { opacity: 0; translate: 0 60px; }
-  to { opacity: 1; translate: 0 0; }
 }
 .ticker {
   animation: ticker 22s linear infinite;

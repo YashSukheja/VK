@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { DropBanner } from '../components/DropBanner'
+import { HeroShow } from '../components/home/HeroShow'
+import { Intro } from '../components/home/Intro'
 import { Photo } from '../components/Photo'
 import { ProductCard } from '../components/ProductCard'
 import { SiteFooter } from '../components/SiteFooter'
@@ -8,7 +10,7 @@ import { SiteHeader } from '../components/SiteHeader'
 import { ProductGridSkeleton } from '../components/Skeletons'
 import { Stars } from '../components/Stars'
 import { ErrorBox } from '../components/States'
-import { fetchCategories, fetchProducts, fetchSettings, DEMO_HERO_PHOTO, HERO_PHOTO_PATH } from '../data/catalog'
+import { fetchCategories, fetchProducts, fetchSettings } from '../data/catalog'
 import { fetchReviewHighlight } from '../data/reviews'
 import { coloursByGroup, groupKey } from '../lib/colours'
 import { discountPercent, formatPrice, sortedImages, totalStock } from '../lib/format'
@@ -26,6 +28,8 @@ export function Home() {
   const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])
   const settings = useAsync(fetchSettings, [])
   const highlight = useAsync(fetchReviewHighlight, [])
+  const [introDone, setIntroDone] = useState(false)
+  const endIntro = useCallback(() => setIntroDone(true), [])
   const [categories, products] = catalog.data ?? [[], []]
 
   // One product per item (colours share a card), newest first.
@@ -43,8 +47,9 @@ export function Home() {
 
   return (
     <div className="min-h-dvh bg-white">
+      {!introDone && <Intro onDone={endIntro} />}
       <SiteHeader settings={settings.data} />
-      <Hero pieces={inStock.length} />
+      <HeroShow pieces={inStock.length} play={introDone} />
       <Ticker />
 
       {withPhoto.length > 0 && (
@@ -161,84 +166,6 @@ function RackCard({ product: p, index }: { product: Product; index: number }) {
   )
 }
 
-/**
- * The first screen, like a studio poster: corner labels, a big headline, and the mannequin photo.
- * A photo uploaded in admin (Settings > Home page) replaces the built-in one.
- */
-function Hero({ pieces }: { pieces: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [src, setSrc] = useState(() => imageUrl(HERO_PHOTO_PATH))
-  useScrollProgress(ref)
-  const [month] = useState(() => new Date().toLocaleString('en-IN', { month: 'short', year: 'numeric' }).toUpperCase())
-
-  return (
-    // The track is taller than the hero, so the hero holds still for a short scroll while the motion plays.
-    <div ref={ref} className="hero-track bg-studio relative pb-[260px] motion-reduce:pb-0">
-    <section aria-label="New on the rack" className="sticky top-16 overflow-hidden">
-      <div className="relative mx-auto flex max-w-6xl flex-col px-5 pb-6 pt-5 md:pt-8">
-        <div className="flex justify-between font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
-          <span>
-            New on
-            <br />
-            the rack
-          </span>
-          <span className="text-right">
-            {pieces > 0 ? `${pieces} ${pieces === 1 ? 'piece' : 'pieces'}` : 'Every week'}
-            <br />
-            {month}
-          </span>
-        </div>
-
-        <span aria-hidden="true" className="poster-in mt-9 text-center text-base tracking-[2px] md:mt-6" style={{ '--i': 0 } as CSSProperties}>
-          ✦✦✦
-        </span>
-        <h1 className="hero-headline relative z-[1] m-0 mt-2.5 text-center font-display text-[44px] font-black uppercase leading-[0.92] tracking-[-0.03em] md:text-[88px]">
-          <span className="poster-in block" style={{ '--i': 1 } as CSSProperties}>
-            The new
-          </span>
-          <span className="poster-in block" style={{ '--i': 2 } as CSSProperties}>
-            rack is in
-          </span>
-        </h1>
-        <p className="poster-in m-0 mx-auto mt-3.5 max-w-xs text-center text-[15px] leading-snug md:text-base" style={{ '--i': 3 } as CSSProperties}>
-          Hand-picked men's clothing. Book online, pick up in store.
-        </p>
-
-        <div className="relative -mx-5 mt-4 h-[420px] md:mx-0 md:h-[560px]">
-          <p aria-hidden="true" className="hero-outline pointer-events-none absolute left-0 top-1/2 m-0 -translate-y-1/2 font-display font-black leading-none">
-            VRACK CLOTHING
-          </p>
-          <img
-            src={src}
-            alt="This week's look: sage green shirt with washed black jeans"
-            onError={() => setSrc(DEMO_HERO_PHOTO)}
-            className="hero-photo relative h-full w-full object-contain drop-shadow-[0_30px_24px_rgb(0_0_0/0.18)]"
-          />
-        </div>
-
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <span className="font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
-            Never
-            <br />
-            basic
-          </span>
-          <span className="max-w-[11rem] text-center text-[11px] leading-snug md:max-w-xs md:text-[13px]">
-            Every piece checked by hand. Pay cash or UPI when you collect.
-          </span>
-          <Link to="/shop" className="flex min-h-11 items-end text-right font-display text-[13px] font-extrabold uppercase leading-[1.1] md:text-sm">
-            <span>
-              Shop
-              <br />
-              now →
-            </span>
-          </Link>
-        </div>
-      </div>
-    </section>
-    </div>
-  )
-}
-
 const TICKER = ['Book online', 'Pick up in store', 'Pay cash or UPI on pickup', 'New pieces every week']
 
 function Ticker() {
@@ -256,29 +183,3 @@ function Ticker() {
   )
 }
 
-/** Sets --p on the hero track: 0 at the top of the page, 1 once its extra scroll has passed. */
-function useScrollProgress(ref: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const el = ref.current
-    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let frame = 0
-    const update = () => {
-      frame = 0
-      const r = el.getBoundingClientRect()
-      const extra = parseFloat(getComputedStyle(el).paddingBottom) || r.height
-      const p = Math.min(1, Math.max(0, -r.top / extra))
-      el.style.setProperty('--p', p.toFixed(3))
-    }
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update)
-    }
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [ref])
-}

@@ -30,9 +30,9 @@ export function ProductPage() {
     const [found, categories] = await Promise.all([fetchProduct(id), fetchCategories()])
     const colours = found?.group_id ? await fetchColours(found.group_id) : []
     return [found, categories, colours] as const
-  }, [id])
-  const settings = useAsync(fetchSettings, [])
-  const all = useAsync(fetchProducts, [])
+  }, [id], 'product')
+  const settings = useAsync(fetchSettings, [], 'settings')
+  const all = useAsync(fetchProducts, [], 'products')
   const [pickedSize, setPickedSize] = useState<string | null>(null)
   const [qty, setQty] = useState(1)
   const [photoIndex, setPhotoIndex] = useState(0)

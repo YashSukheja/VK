@@ -7,7 +7,7 @@ import { useCountdown } from '../lib/useCountdown'
 
 /** The next drop with a live countdown, or the latest one if it just went live. */
 export function DropBanner() {
-  const drops = useAsync(fetchUpcomingDrops, [])
+  const drops = useAsync(fetchUpcomingDrops, [], 'drops')
   const list = drops.data ?? []
   const now = Date.now()
   const next = list.find((d) => new Date(d.starts_at).getTime() > now)

@@ -17,6 +17,9 @@ const LAYOUTS = {
     w: 400,
     h: 1100,
     d: 'M-30 60 C40 40 80 100 70 180 C60 260 110 330 190 350 C270 370 300 290 250 260 C200 230 160 310 220 380 C260 420 330 400 330 470 C330 560 250 590 180 610 C100 630 60 660 70 740 C80 820 150 850 220 860 C300 870 250 790 200 820 C150 850 210 930 330 990 C380 1015 400 1060 430 1090',
+    // How far along the ribbon each stop sits (0 to 1), measured once ahead of time:
+    // measuring a long path in the browser is slow on phones.
+    marks: [0.093, 0.444, 0.646, 0.93],
     nodes: [
       { x: 70, y: 180, side: 'right' },
       { x: 330, y: 470, side: 'left' },
@@ -28,6 +31,7 @@ const LAYOUTS = {
     w: 1000,
     h: 700,
     d: 'M-30 120 C60 100 110 130 130 200 C150 280 200 330 280 330 C360 330 360 250 310 250 C250 250 260 360 330 420 C380 460 420 470 430 520 C440 580 520 600 560 520 C600 440 600 300 650 220 C690 160 760 170 760 230 C760 290 690 290 700 240 C720 170 820 250 850 330 C880 420 880 500 900 540 C920 590 980 620 1040 640',
+    marks: [0.089, 0.399, 0.615, 0.922],
     nodes: [
       { x: 130, y: 200, side: 'right' },
       { x: 430, y: 520, side: 'right' },
@@ -59,17 +63,6 @@ export function HowItWorks() {
     const path = ribbon.current
     if (!path || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const total = path.getTotalLength()
-    // How far along the ribbon each stop sits (0 to 1): the nearest point on the path.
-    const marks = layout.nodes.map((n) => {
-      let best = 0
-      let bestD = Infinity
-      for (let l = 0; l <= total; l += total / 600) {
-        const p = path.getPointAtLength(l)
-        const d = (p.x - n.x) ** 2 + (p.y - n.y) ** 2
-        if (d < bestD) [best, bestD] = [l, d]
-      }
-      return best / total
-    })
     path.style.strokeDasharray = `${total}`
     path.style.strokeDashoffset = `${total}`
     setReached(0)
@@ -80,7 +73,7 @@ export function HowItWorks() {
       scrub: 0.5,
       onUpdate: (self) => {
         path.style.strokeDashoffset = `${total * (1 - self.progress)}`
-        const count = marks.filter((m) => self.progress >= m).length
+        const count = layout.marks.filter((m) => self.progress >= m).length
         setReached((r) => (r === count ? r : count))
       },
     })

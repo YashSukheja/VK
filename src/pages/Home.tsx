@@ -42,9 +42,9 @@ const NEW_IN = 6
 export function Home() {
   const { search } = useLocation()
   useTitle(null)
-  const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])
-  const settings = useAsync(fetchSettings, [])
-  const reviews = useAsync(fetchReviewWall, [])
+  const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [], 'catalog')
+  const settings = useAsync(fetchSettings, [], 'settings')
+  const reviews = useAsync(fetchReviewWall, [], 'review-wall')
   // The logo intro plays once per visit, not every time someone comes back to the home page.
   const [introDone, setIntroDone] = useState(() => seenIntro())
   const endIntro = useCallback(() => {

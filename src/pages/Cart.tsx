@@ -43,7 +43,7 @@ export function Cart() {
       <Page title="Your cart">
         <Empty>
           Your cart is empty.{' '}
-          <Link to="/" className="font-extrabold underline underline-offset-4">
+          <Link to="/shop" className="font-extrabold underline underline-offset-4">
             Browse the shop
           </Link>
         </Empty>

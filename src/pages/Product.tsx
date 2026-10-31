@@ -54,7 +54,7 @@ export function ProductPage() {
       <Shell settings={settings.data}>
         <div className="py-16 text-center">
           <h1 className="font-display text-2xl font-extrabold">This item isn't available</h1>
-          <Link to="/" className="mt-4 inline-flex min-h-11 items-center font-bold underline underline-offset-4">
+          <Link to="/shop" className="mt-4 inline-flex min-h-11 items-center font-bold underline underline-offset-4">
             Back to the shop
           </Link>
         </div>
@@ -113,7 +113,7 @@ export function ProductPage() {
               )}
             </div>
             <Link
-              to="/"
+              to="/shop"
               aria-label="Back to shop"
               className="absolute left-3.5 top-3.5 flex size-11 items-center justify-center rounded-full bg-white md:hidden"
             >
@@ -136,7 +136,7 @@ export function ProductPage() {
           <div className="flex flex-col gap-2.5">
             <div className="flex min-h-11 items-center justify-between gap-3">
               {category ? (
-                <Link to={`/?cat=${category.slug}`} className="text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                <Link to={`/shop?cat=${category.slug}`} className="text-xs font-bold uppercase tracking-[0.08em] text-muted">
                   {category.name}
                 </Link>
               ) : (

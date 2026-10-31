@@ -9,6 +9,7 @@ import { CartProvider } from './lib/cart'
 import { Account } from './pages/Account'
 import { BookingDetail } from './pages/BookingDetail'
 import { Cart } from './pages/Cart'
+import { Home } from './pages/Home'
 import { Login } from './pages/Login'
 import { ProductPage } from './pages/Product'
 import { Shop } from './pages/Shop'
@@ -17,7 +18,7 @@ function NotFound() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-5 text-center">
       <h1 className="m-0 font-display text-3xl font-black uppercase">Page not found</h1>
-      <Link to="/" className="flex min-h-11 items-center rounded-xl bg-ink px-5 font-bold text-white">
+      <Link to="/shop" className="flex min-h-11 items-center rounded-xl bg-ink px-5 font-bold text-white">
         Go to the shop
       </Link>
     </div>
@@ -28,7 +29,8 @@ const router = createBrowserRouter([
   {
     element: <PageTransition />,
     children: [
-      { path: '/', element: <Shop /> },
+      { path: '/', element: <Home /> },
+      { path: '/shop', element: <Shop /> },
       { path: '/p/:id', element: <ProductPage /> },
       { path: '/cart', element: <Cart /> },
       { path: '/login', element: <Login mode="login" /> },

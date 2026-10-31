@@ -53,7 +53,7 @@ export function Account() {
       {bookings.length === 0 ? (
         <Empty>
           No bookings yet.{' '}
-          <Link to="/" className="font-extrabold underline underline-offset-4">
+          <Link to="/shop" className="font-extrabold underline underline-offset-4">
             Browse the shop
           </Link>
         </Empty>

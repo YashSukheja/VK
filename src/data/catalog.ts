@@ -1,6 +1,9 @@
 import { supabase } from '../lib/supabase'
 import type { Category, Product, StoreSettings } from '../lib/types'
 
+/** The home page model cut-out, uploaded in admin Settings. */
+export const HERO_MODEL_PATH = 'site/hero-model.webp'
+
 const PRODUCT_COLUMNS =
   // `*` picks up newer columns like on_sale once their SQL has run, without breaking before.
   '*, product_images(id, path, sort_order), product_sizes(id, size, stock, sort_order)'

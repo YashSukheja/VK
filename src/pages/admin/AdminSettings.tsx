@@ -7,6 +7,7 @@ import type { StoreSettings } from '../../lib/types'
 import { useAsync } from '../../lib/useAsync'
 import { AlertSettings } from './AlertSettings'
 import { BackupSettings } from './BackupSettings'
+import { HeroSettings } from './HeroSettings'
 import { PasswordSettings } from './PasswordSettings'
 import { ThumbnailSettings } from './ThumbnailSettings'
 
@@ -17,6 +18,7 @@ export function AdminSettings() {
   return (
     <div className="flex flex-col gap-6">
       <SettingsForm initial={data} />
+      <HeroSettings />
       <AlertSettings />
       <ThumbnailSettings />
       <BackupSettings />

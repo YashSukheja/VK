@@ -8,7 +8,7 @@ const customer = { username: `priya_${tail}`, mobile: `93${tail}77`, password: '
 const shots = process.env.SHOTS_DIR
 
 test('a shopper fills the cart, creates an account and books', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/shop')
   await page.getByRole('link', { name: /Oxford Shirt, Sky Blue/ }).click()
   await page.getByRole('button', { name: 'L', exact: true }).click()
   await page.getByRole('button', { name: 'Increase quantity' }).click()
@@ -18,7 +18,7 @@ test('a shopper fills the cart, creates an account and books', async ({ page }) 
   if (shots) await page.screenshot({ path: `${shots}/product-added.png` })
 
   // Only one pair of jeans in stock: after adding it, there's nothing more to add.
-  await page.goto('/')
+  await page.goto('/shop')
   await page.getByRole('link', { name: /Slim Jeans/ }).click()
   await page.getByRole('button', { name: 'Add to cart' }).click()
   await expect(page.getByText('Added 1 × size 32 to your cart')).toBeVisible()

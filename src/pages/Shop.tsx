@@ -59,7 +59,7 @@ export function Shop() {
     if (slug) next.set('cat', slug)
     else next.delete('cat')
     const qs = next.toString()
-    return qs ? `/?${qs}` : '/'
+    return qs ? `/shop?${qs}` : '/shop'
   }
 
   const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])

@@ -72,7 +72,8 @@ function SiteMenu({ settings, loggedIn, onClose }: { settings?: StoreSettings; l
         </button>
       </div>
       <nav className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-5 pt-10">
-        <Link to="/" onClick={onClose} className={big}>Shop</Link>
+        <Link to="/" onClick={onClose} className={big}>Home</Link>
+        <Link to="/shop" onClick={onClose} className={big}>Shop</Link>
         <Link to="/cart" onClick={onClose} className={big}>Cart</Link>
         <Link to={loggedIn ? '/account' : '/login'} onClick={onClose} className={big}>
           {loggedIn ? 'My bookings' : 'Log in'}

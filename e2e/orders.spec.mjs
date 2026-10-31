@@ -34,7 +34,7 @@ async function adminLogin(page) {
 }
 
 test('a second customer books the last pair of jeans', async ({ page }) => {
-  await page.goto('/register?next=/')
+  await page.goto('/register?next=/shop')
   await page.getByLabel('Username').fill(buyer.username)
   await page.getByLabel('Mobile number').fill(buyer.mobile)
   await page.getByLabel('Password').fill(buyer.password)
@@ -86,7 +86,7 @@ test('VK confirms one booking, the other can no longer be confirmed, and stock d
   await expect(page.getByRole('listitem').filter({ hasText: 'VK-1001' }).getByText('Completed')).toBeVisible()
   await expect(page.getByRole('listitem').filter({ hasText: 'VK-1002' }).getByText('Rejected')).toBeVisible()
 
-  await page.goto('/')
+  await page.goto('/shop')
   await expect(page.getByRole('link', { name: /Slim Jeans/ })).toContainText('Sold out')
   await expect(page.getByRole('link', { name: /Oxford Shirt/ })).toContainText('Only 2 left')
 })
@@ -155,7 +155,7 @@ test('VK changes stock from the list, tags a product SALE and changes the admin 
   await page.getByRole('button', { name: 'Save changes' }).click()
   await expect(page.getByText('Saved. It’s live in the shop.')).toBeVisible()
 
-  await page.goto('/')
+  await page.goto('/shop')
   await expect(page.getByRole('link', { name: /Oxford Shirt/ })).toContainText('SALE')
   // Added today, so the jeans show NEW.
   await expect(page.getByRole('link', { name: /Slim Jeans/ })).toContainText('NEW')
@@ -185,7 +185,7 @@ test('a customer asks to be told when jeans are back; VK sees it and tells them;
   await page.getByRole('button', { name: 'Log out' }).click()
 
   // Visitors are asked to log in first.
-  await page.goto('/')
+  await page.goto('/shop')
   const footer = page.getByRole('contentinfo')
   await expect(footer).toContainText('Mon to Sat, 11 am to 9 pm')
   await expect(footer).toContainText('Shop 4, Main Market')

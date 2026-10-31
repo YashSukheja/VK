@@ -109,7 +109,7 @@ test('admin fills in store settings and adds products with photos and stock', as
 })
 
 test('shoppers browse by category and see sizes and prices', async ({ page, browser }) => {
-  await page.goto('/')
+  await page.goto('/shop')
   await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
   const shirt = page.getByRole('link', { name: /Oxford Shirt, Sky Blue/ })
   await expect(shirt).toBeVisible()
@@ -141,11 +141,35 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
   if (shots) await page.screenshot({ path: `${shots}/product-phone.png` })
 
   const desktop = await browser.newPage({ viewport: { width: 1280, height: 860 } })
-  await desktop.goto('http://localhost:5173/')
+  await desktop.goto('http://localhost:5173/shop')
   await expect(desktop.getByRole('link', { name: /Oxford Shirt/ })).toBeVisible()
   await desktop.waitForTimeout(300)
   if (shots) await desktop.screenshot({ path: `${shots}/shop-desktop.png` })
   await desktop.close()
+})
+
+test('the home page shows the rail, new pieces and types; admin adds the model photo', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'New in' })).toBeVisible()
+  // The rail hangs the newest pieces in stock; each opens its product.
+  const hero = page.getByRole('region', { name: 'Vrack Clothing' })
+  await expect(hero.getByRole('link', { name: 'Oxford Shirt, Sky Blue' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Jeans \d+ piece/ })).toBeVisible()
+  await page.getByRole('link', { name: /^Jeans \d+ piece/ }).click()
+  await expect(page).toHaveURL(/\/shop\?cat=jeans$/)
+  await expect(page.getByRole('heading', { name: 'Jeans' })).toBeVisible()
+
+  await login(page)
+  await page.getByRole('link', { name: 'Settings' }).click()
+  const card = page.getByRole('region', { name: 'Home page' })
+  await expect(card.getByText('No photo yet')).toBeVisible()
+  await card.locator('input[type=file]').setInputFiles(fixture('model.png'))
+  await expect(card.getByText('Home page photo saved.')).toBeVisible()
+  await expect(card.getByAltText('Home page model photo')).toBeVisible()
+
+  await page.goto('/')
+  await expect(page.locator('img.hero-model')).toBeVisible()
+  if (shots) await page.screenshot({ path: `${shots}/home-phone.png`, fullPage: true })
 })
 
 test('shoppers search, filter by size, sort and share', async ({ page }) => {
@@ -156,7 +180,7 @@ test('shoppers search, filter by size, sort and share', async ({ page }) => {
       window.__shared = data
     }
   })
-  await page.goto('/')
+  await page.goto('/shop')
   const cards = page.locator('a[href^="/p/"]')
   await expect(cards).toHaveCount(2)
 
@@ -197,7 +221,7 @@ test('shoppers search, filter by size, sort and share', async ({ page }) => {
   await expect(cards).toHaveCount(1)
   // Picking another category keeps the sort but drops the size.
   await page.getByRole('link', { name: 'Jeans', exact: true }).click()
-  await expect(page).toHaveURL(/\/\?cat=jeans&sort=price-desc$/)
+  await expect(page).toHaveURL(/\/shop\?cat=jeans&sort=price-desc$/)
   if (shots) await page.screenshot({ path: `${shots}/shop-filters.png` })
 
   await cards.first().click()

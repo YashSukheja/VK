@@ -161,10 +161,10 @@ function Hero({ rail }: { rail: Product[] }) {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-6 md:flex-row md:items-center md:justify-between">
           <p className="m-0 max-w-xs text-[15px] leading-snug">Men's clothing, picked by hand. Book online, pick up in store.</p>
           <div className="flex gap-2.5">
-            <Link to="/shop" className="flex h-12 flex-1 items-center justify-center bg-ink px-6 text-[15px] font-bold text-white md:flex-none">
+            <Link to="/shop" className="flex h-12 flex-1 items-center justify-center whitespace-nowrap bg-ink px-3 text-[15px] font-bold text-white md:flex-none md:px-6">
               Shop new in
             </Link>
-            <a href="#by-type" className="flex h-12 flex-1 items-center justify-center border-[1.5px] border-ink px-6 text-[15px] font-bold md:flex-none">
+            <a href="#by-type" className="flex h-12 flex-1 items-center justify-center whitespace-nowrap border-[1.5px] border-ink px-3 text-[15px] font-bold md:flex-none md:px-6">
               Shop by type
             </a>
           </div>

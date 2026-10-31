@@ -164,7 +164,8 @@ button:not(:disabled):active,
    Home page hero. --p goes from 0 to 1 as the hero scrolls away (set in Home.tsx).
    --------------------------------------------------------------------------- */
 .hero-word {
-  font-size: clamp(84px, 22vw, 290px);
+  font-size: clamp(56px, 22vw, 256px);
+  white-space: nowrap;
   font-stretch: 125%;
   letter-spacing: -0.06em;
   transform: translateY(calc(var(--p, 0) * -40px)) scale(calc(1 + var(--p, 0) * 0.35));

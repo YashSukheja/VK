@@ -22,9 +22,9 @@
   --radius-xl: 0;
   --radius-2xl: 0;
   --radius-3xl: 0;
-  --color-warn-bg: #fff4d6;
-  --color-warn-line: #e8b93a;
-  --color-warn-ink: #3d2a00;
+  --color-warn-bg: #f3f3f0;
+  --color-warn-line: #000000;
+  --color-warn-ink: #000000;
   --color-danger: #b42318;
 }
 
@@ -270,4 +270,9 @@ button:not(:disabled):active,
   .heart.is-saved svg {
     animation: none;
   }
+}
+
+/* Warnings stay in the black-and-grey palette: a grey box with a heavy black edge. */
+.bg-warn-bg {
+  border-left: 3px solid var(--color-ink);
 }

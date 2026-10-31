@@ -130,11 +130,11 @@ export function ProductPage() {
             <Link
               to="/shop"
               aria-label="Back to shop"
-              className="absolute left-3.5 top-3.5 flex size-11 items-center justify-center rounded-full bg-white md:hidden"
+              className="absolute left-3.5 top-3.5 flex size-11 items-center justify-center bg-white md:hidden"
             >
               <BackIcon />
             </Link>
-            <div className="absolute right-3.5 top-3.5 rounded-full bg-white md:hidden">
+            <div className="absolute right-3.5 top-3.5 bg-white md:hidden">
               <CartButton count={cart.count} />
             </div>
             {images.length > 1 && (

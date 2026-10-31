@@ -247,7 +247,7 @@ function Editor({
       <Card title="Photos" aside={<span className="text-xs text-muted">{photos.length}/{MAX_PHOTOS}</span>}>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photos.map((photo, i) => (
-            <div key={photo.key} className="relative aspect-[3/4] overflow-hidden rounded-[10px] bg-photo">
+            <div key={photo.key} className="relative aspect-[3/4] overflow-hidden rounded-none bg-photo">
               <img src={photo.url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
               {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold text-white">COVER</span>}
               <button type="button" aria-label={`Remove photo ${i + 1}`} onClick={() => removePhoto(i)} className="absolute right-1 top-1 flex size-8 items-center justify-center rounded-full bg-white/95">
@@ -264,7 +264,7 @@ function Editor({
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
-            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-[1.5px] border-dashed border-[#9a9a92] bg-white text-xs font-bold text-body">
+            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1 rounded-none border-[1.5px] border-dashed border-[#9a9a92] bg-white text-xs font-bold text-body">
               <PlusIcon />
               {preparing ? 'Preparing…' : 'Add photos'}
               <input type="file" accept="image/*" multiple className="sr-only" disabled={preparing} onChange={(e) => void addPhotos(e.target.files).then(() => (e.target.value = ''))} />

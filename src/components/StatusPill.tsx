@@ -3,7 +3,7 @@ import type { BookingStatus } from '../lib/types'
 
 const STYLE: Record<BookingStatus, string> = {
   pending: 'bg-warn-bg text-warn-ink',
-  confirmed: 'bg-accent text-ink',
+  confirmed: 'bg-ink text-white',
   completed: 'bg-ink text-white',
   rejected: 'bg-surface text-muted',
   cancelled: 'bg-surface text-muted',

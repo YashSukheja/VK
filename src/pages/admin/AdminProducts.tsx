@@ -28,7 +28,7 @@ export function AdminProducts() {
       <div className="flex items-center justify-between">
         <h1 className="m-0 font-display text-2xl font-black uppercase">Products</h1>
         <Link to="/admin/products/new" className="flex min-h-11 items-center gap-1.5 rounded-xl bg-ink px-4 text-sm font-extrabold text-white">
-          <PlusIcon size={18} className="text-accent" />
+          <PlusIcon size={18} className="text-white" />
           Add product
         </Link>
       </div>
@@ -81,7 +81,7 @@ function ProductRow({ product: p, categoryName, waiting }: { product: Product; c
             <span className={`rounded-md px-1.5 py-0.5 font-bold ${stock === 0 ? 'bg-[#ececE7] text-[#45453f]' : 'bg-surface'}`}>
               {stock === 0 ? 'Sold out' : `${stock} in stock`}
             </span>
-            {waiting > 0 && <span className="rounded-md bg-accent px-1.5 py-0.5 font-bold text-ink">{waiting} waiting</span>}
+            {waiting > 0 && <span className="bg-ink px-1.5 py-0.5 font-bold text-white">{waiting} waiting</span>}
             {p.on_sale && <span className="rounded-md bg-danger px-1.5 py-0.5 font-bold text-white">Sale</span>}
             {!p.is_visible && <span className="rounded-md bg-warn-bg px-1.5 py-0.5 font-bold text-warn-ink">Hidden</span>}
           </span>
@@ -116,7 +116,7 @@ function QuickStock({ name, sizes, setSizes }: { name: string; sizes: ProductSiz
     <div className="flex flex-col gap-2 border-t border-line px-3 py-2.5">
       <ul aria-label={`Stock for ${name}`} className="m-0 flex list-none flex-wrap gap-2 p-0">
         {sizes.map((s) => (
-          <li key={s.id} className={`flex items-center rounded-[10px] border-[1.5px] ${s.stock === 0 ? 'border-dashed border-field' : 'border-field'}`}>
+          <li key={s.id} className={`flex items-center rounded-none border-[1.5px] ${s.stock === 0 ? 'border-dashed border-field' : 'border-field'}`}>
             <button
               type="button"
               aria-label={`One less ${s.size} of ${name}`}

@@ -203,6 +203,6 @@ test('shoppers search, filter by size, sort and share', async ({ page }) => {
   await cards.first().click()
   await page.getByRole('button', { name: 'Share' }).click()
   const shared = await page.evaluate(() => window.__shared)
-  expect(shared.text).toBe("Slim Jeans, Dark Wash for ₹799 at VK's Store")
+  expect(shared.text).toBe("Slim Jeans, Dark Wash for ₹799 at Vrack Clothing")
   expect(shared.url).toMatch(/^http:\/\/localhost:5173\/p\/[0-9a-f-]{36}$/)
 })

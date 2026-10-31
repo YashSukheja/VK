@@ -48,7 +48,7 @@ export function formatDateTime(iso: string): string {
 }
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: 'Waiting for VK',
+  pending: 'Waiting for confirmation',
   confirmed: 'Confirmed',
   completed: 'Completed',
   rejected: 'Rejected',
@@ -74,7 +74,7 @@ export function bookingMessage(b: Booking): string {
 
 /** What VK sends the customer on WhatsApp after confirming or rejecting. */
 export function customerMessage(b: Booking, pickupAddress: string | null): string {
-  const hi = `Hi ${b.customer_username}, this is VK's Store about your booking ${b.code} (${formatPrice(b.total)}).`
+  const hi = `Hi ${b.customer_username}, this is Vrack Clothing about your booking ${b.code} (${formatPrice(b.total)}).`
   switch (b.status) {
     case 'confirmed':
       return b.fulfilment === 'pickup'

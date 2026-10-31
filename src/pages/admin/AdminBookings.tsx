@@ -153,7 +153,7 @@ function BookingCard({
           href={whatsappLink(b.customer_mobile, customerMessage(shown, pickupAddress))}
           target="_blank"
           rel="noreferrer"
-          className={`flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-extrabold ${done ? 'bg-accent text-ink' : 'border-[1.5px] border-ink'}`}
+          className={`flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-extrabold ${done ? 'bg-ink text-white' : 'border-[1.5px] border-ink'}`}
         >
           <ChatIcon size={16} />
           {done ? 'Tell customer' : 'WhatsApp'}

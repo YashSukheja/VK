@@ -40,12 +40,12 @@ export function WaitingCustomers({ productId, productName }: { productId: string
               <a
                 href={whatsappLink(
                   r.customer.mobile,
-                  `Hi ${r.customer.username}, good news from VK's Store! ${productName} in size ${r.size} is back in stock: ${link}`,
+                  `Hi ${r.customer.username}, good news from Vrack Clothing! ${productName} in size ${r.size} is back in stock: ${link}`,
                 )}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => void tell(r.id)}
-                className="flex min-h-11 flex-none items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-extrabold text-ink"
+                className="flex min-h-11 flex-none items-center gap-1.5 bg-ink px-3 text-sm font-extrabold text-white"
               >
                 <ChatIcon size={16} />
                 Tell

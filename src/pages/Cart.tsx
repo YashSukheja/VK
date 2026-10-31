@@ -121,7 +121,7 @@ export function Cart() {
                   {r.product?.colour && <>{r.product.colour} · </>}Size {r.size}
                 </span>
                 <div className="mt-auto flex items-center justify-between">
-                  <div className="flex items-center rounded-[10px] border-[1.5px] border-field">
+                  <div className="flex items-center rounded-none border-[1.5px] border-field">
                     <button
                       type="button"
                       aria-label={`Fewer of ${r.product?.name ?? 'item'}`}
@@ -157,10 +157,10 @@ export function Cart() {
 
       <Section title="How do you want it?">
         <Choice name="fulfilment" checked={fulfilment === 'pickup'} onChange={() => setFulfilment('pickup')} label="Pickup from the shop">
-          {pickupAddress ?? 'VK will share the address.'}
+          {pickupAddress ?? 'We will share the address.'}
         </Choice>
         <Choice name="fulfilment" checked={fulfilment === 'delivery'} onChange={() => setFulfilment('delivery')} label="Delivery">
-          VK will confirm the delivery charge, if any.
+          We will confirm the delivery charge, if any.
         </Choice>
         {fulfilment === 'delivery' && (
           <label className="flex flex-col gap-1.5 text-sm font-extrabold">
@@ -190,7 +190,7 @@ export function Cart() {
       </Section>
 
       <label className="flex flex-col gap-1.5 text-sm font-extrabold">
-        Note for VK (optional)
+        Note for the store (optional)
         <input className={fieldClass} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Best time to reach you, etc." />
       </label>
 
@@ -201,7 +201,7 @@ export function Cart() {
       )}
 
       {!session ? (
-        <Link to="/login?next=/cart" className="flex h-[54px] items-center justify-center rounded-[14px] bg-ink text-base font-extrabold text-white">
+        <Link to="/login?next=/cart" className="flex h-[54px] items-center justify-center rounded-none bg-ink text-base font-extrabold text-white">
           Log in to book
         </Link>
       ) : role === 'admin' ? (
@@ -211,12 +211,12 @@ export function Cart() {
           type="button"
           disabled={busy || hasProblem}
           onClick={() => void book()}
-          className="h-[54px] rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-50"
+          className="h-[54px] rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-50"
         >
           {busy ? 'Booking…' : `Book now · ${formatPrice(total)}`}
         </button>
       )}
-      <p className="m-0 text-center text-xs text-muted">VK checks and confirms every booking. Nothing is paid now.</p>
+      <p className="m-0 text-center text-xs text-muted">We check and confirm every booking. Nothing is paid now.</p>
     </Page>
   )
 }

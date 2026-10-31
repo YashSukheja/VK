@@ -91,7 +91,7 @@ export function Login({ mode }: { mode: 'login' | 'register' }) {
                   onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
                 />
               </div>
-              <span className={hintClass}>VK uses this to reach you about your booking.</span>
+              <span className={hintClass}>We use this to reach you about your booking.</span>
             </label>
           </>
         )}
@@ -113,7 +113,7 @@ export function Login({ mode }: { mode: 'login' | 'register' }) {
             {error}
           </p>
         )}
-        <button disabled={busy} className="h-[54px] rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-60">
+        <button disabled={busy} className="h-[54px] rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-60">
           {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
         </button>
       </form>
@@ -123,7 +123,7 @@ export function Login({ mode }: { mode: 'login' | 'register' }) {
           {mode === 'login' ? 'Create an account' : 'Log in'}
         </Link>
       </p>
-      {mode === 'login' && <p className="m-0 text-center text-xs text-muted">Forgot your password? Message VK on WhatsApp.</p>}
+      {mode === 'login' && <p className="m-0 text-center text-xs text-muted">Forgot your password? Message us on WhatsApp.</p>}
     </Page>
   )
 }

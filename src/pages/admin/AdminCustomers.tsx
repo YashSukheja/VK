@@ -54,7 +54,7 @@ function CustomerRow({ customer: c }: { customer: Customer }) {
     }
   }
 
-  const resetText = `Hi ${c.username}, your new VK's Store password is: ${password}\nLog in with your username or mobile number.`
+  const resetText = `Hi ${c.username}, your new Vrack Clothing password is: ${password}\nLog in with your username or mobile number.`
 
   return (
     <li className="flex flex-col gap-3 rounded-2xl bg-white p-4">
@@ -72,7 +72,7 @@ function CustomerRow({ customer: c }: { customer: Customer }) {
         </span>
         {c.mobile && (
           <a
-            href={whatsappLink(c.mobile, `Hi ${c.username}, this is VK's Store.`)}
+            href={whatsappLink(c.mobile, `Hi ${c.username}, this is Vrack Clothing.`)}
             target="_blank"
             rel="noreferrer"
             aria-label={`WhatsApp ${c.username}`}
@@ -106,7 +106,7 @@ function CustomerRow({ customer: c }: { customer: Customer }) {
                 href={whatsappLink(c.mobile, resetText)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent text-sm font-extrabold text-ink"
+                className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-ink text-sm font-extrabold text-white"
               >
                 <ChatIcon size={16} />
                 Send on WhatsApp

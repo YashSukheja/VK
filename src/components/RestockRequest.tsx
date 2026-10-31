@@ -22,7 +22,7 @@ export function RestockRequest({ productId, soldOut }: { productId: string; sold
         setMessage({ kind: 'ok', text: `Okay, you won't be told about size ${size}.` })
       } else {
         await requestRestock(productId, size)
-        setMessage({ kind: 'ok', text: `Done. VK will message you on WhatsApp when size ${size} is back.` })
+        setMessage({ kind: 'ok', text: `Done. We'll message you on WhatsApp when size ${size} is back.` })
       }
       mine.reload()
     } catch (err) {
@@ -36,7 +36,7 @@ export function RestockRequest({ productId, soldOut }: { productId: string; sold
     <section className="flex flex-col gap-2.5 rounded-xl border-[1.5px] border-dashed border-field px-3.5 py-3">
       <div className="flex flex-col gap-0.5">
         <h2 className="m-0 text-sm font-extrabold">Size sold out?</h2>
-        <p className="m-0 text-[13px] text-muted">Tap your size and VK will tell you when it's back.</p>
+        <p className="m-0 text-[13px] text-muted">Tap your size and we'll tell you when it's back.</p>
       </div>
       {!session ? (
         <Link to={`/login?next=/p/${productId}`} className="text-sm font-extrabold underline underline-offset-4">
@@ -53,11 +53,11 @@ export function RestockRequest({ productId, soldOut }: { productId: string; sold
                 aria-pressed={waiting}
                 disabled={busy !== null || mine.loading}
                 onClick={() => void toggle(size, waiting)}
-                className={`flex h-10 min-w-12 items-center justify-center gap-1 rounded-[10px] px-3 text-sm disabled:opacity-60 ${
+                className={`flex h-10 min-w-12 items-center justify-center gap-1 rounded-none px-3 text-sm disabled:opacity-60 ${
                   waiting ? 'bg-ink font-extrabold text-white' : 'border-[1.5px] border-field bg-white font-bold'
                 }`}
               >
-                {waiting && <CheckIcon size={14} className="text-accent" />}
+                {waiting && <CheckIcon size={14} className="text-white" />}
                 {size}
               </button>
             )

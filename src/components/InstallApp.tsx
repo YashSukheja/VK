@@ -40,7 +40,7 @@ export function InstallApp({ label = 'Install the app' }: { label?: string }) {
     )
   }
   if (isIos()) {
-    return <p className="m-0 text-xs text-muted">To add VK's Store to your home screen: tap Share, then “Add to Home Screen”.</p>
+    return <p className="m-0 text-xs text-muted">To add Vrack to your home screen: tap Share, then “Add to Home Screen”.</p>
   }
   return null
 }

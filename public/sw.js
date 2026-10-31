@@ -1,8 +1,8 @@
-// VK's Store service worker: makes the site installable and quick to reopen.
+// Vrack service worker: makes the site installable and quick to reopen.
 // Pages: network first, falling back to the saved copy when offline.
 // Build files (/assets/*, named by content hash): saved once, reused.
 // Supabase (products, logins, bookings) is never cached.
-const CACHE = 'vks-v1'
+const CACHE = 'vrack-v1'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.add('/')).then(() => self.skipWaiting()))

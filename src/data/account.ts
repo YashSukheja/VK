@@ -23,7 +23,7 @@ export async function signUpCustomer(username: string, mobile: string, password:
   if (error) throw new Error(error.message)
   if (!data.session) {
     // Happens only if "Confirm email" is still on in Supabase.
-    throw new Error('Sign-up is not ready yet. Please ask VK on WhatsApp.')
+    throw new Error('Sign-up is not ready yet. Please message us on WhatsApp.')
   }
 }
 

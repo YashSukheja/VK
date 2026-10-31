@@ -76,7 +76,7 @@ export function ProductPage() {
   const wa = settings.data?.whatsapp_number
 
   const canAdd = !!current && maxQty > 0
-  const askText = `Hi VK, will ${displayName(p)} come back in stock?`
+  const askText = `Hi Vrack, will ${displayName(p)} come back in stock?`
 
   function addToCart() {
     if (!current || !canAdd) return
@@ -158,7 +158,7 @@ export function ProductPage() {
               {off !== null && p.mrp && (
                 <>
                   <span className="text-[15px] text-muted line-through">MRP {formatPrice(p.mrp)}</span>
-                  <span className="rounded-md bg-accent px-2 py-1 text-xs font-extrabold">
+                  <span className="bg-ink px-2 py-1 text-xs font-extrabold text-white">
                     YOU SAVE {formatPrice(p.mrp - p.price)}
                   </span>
                 </>
@@ -215,7 +215,7 @@ export function ProductPage() {
                       type="button"
                       disabled
                       aria-label={`${s.size}, sold out`}
-                      className="h-12 min-w-14 cursor-not-allowed rounded-[10px] border-[1.5px] border-dashed border-[#d6d6cf] bg-[#f7f7f4] px-3 text-[15px] font-semibold text-[#a3a39b] line-through"
+                      className="h-12 min-w-14 cursor-not-allowed rounded-none border-[1.5px] border-dashed border-[#d6d6cf] bg-[#f7f7f4] px-3 text-[15px] font-semibold text-[#a3a39b] line-through"
                     >
                       {s.size}
                     </button>
@@ -229,7 +229,7 @@ export function ProductPage() {
                         setQty(1)
                         setAdded(null)
                       }}
-                      className={`h-12 min-w-14 rounded-[10px] px-3 text-[15px] ${
+                      className={`h-12 min-w-14 rounded-none px-3 text-[15px] ${
                         current?.id === s.id
                           ? 'border-2 border-ink bg-ink font-extrabold text-white'
                           : 'border-[1.5px] border-field bg-white font-bold'
@@ -248,7 +248,7 @@ export function ProductPage() {
           {!soldOut && canAdd && (
             <div className="flex items-center justify-between">
               <h2 className="m-0 text-[15px] font-extrabold">Quantity</h2>
-              <div className="flex items-center rounded-[10px] border-[1.5px] border-field">
+              <div className="flex items-center rounded-none border-[1.5px] border-field">
                 <button type="button" aria-label="Decrease quantity" onClick={() => {
                     setQty(Math.max(quantity - 1, 1))
                     setAdded(null)
@@ -270,16 +270,16 @@ export function ProductPage() {
 
           <div className="flex items-start gap-2.5 rounded-xl bg-surface px-3.5 py-3 text-[13px] leading-normal text-body">
             <InfoIcon size={18} className="mt-px flex-none" />
-            <span>Book now and pay cash or UPI at pickup or delivery. VK confirms every booking.</span>
+            <span>Book now and pay cash or UPI at pickup or delivery. We confirm every booking.</span>
           </div>
 
           {added && (
             <p role="status" className="m-0 flex items-center justify-between gap-3 rounded-xl bg-ink px-3.5 py-3 text-sm font-semibold text-white">
               <span className="flex items-center gap-2">
-                <CheckIcon size={18} className="text-accent" />
+                <CheckIcon size={18} className="text-white" />
                 Added {added} to your cart
               </span>
-              <Link to="/cart" className="font-extrabold text-accent underline underline-offset-4">
+              <Link to="/cart" className="font-extrabold text-white underline underline-offset-4">
                 View cart
               </Link>
             </p>
@@ -305,7 +305,7 @@ export function ProductPage() {
             {added ? (
               <Link
                 to="/cart"
-                className="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-accent text-base font-extrabold text-ink"
+                className="flex h-[54px] flex-1 items-center justify-center gap-2 border-[1.5px] border-ink bg-white text-base font-extrabold text-ink"
               >
                 <CheckIcon size={20} />
                 Added · View cart
@@ -315,7 +315,7 @@ export function ProductPage() {
                 type="button"
                 disabled={!canAdd}
                 onClick={addToCart}
-                className="flex h-[54px] flex-1 items-center justify-center rounded-[14px] bg-ink text-base font-extrabold text-white disabled:opacity-40"
+                className="flex h-[54px] flex-1 items-center justify-center rounded-none bg-ink text-base font-extrabold text-white disabled:opacity-40"
               >
                 Add to cart
               </button>
@@ -324,13 +324,13 @@ export function ProductPage() {
                 href={whatsappLink(wa, askText)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-ink text-base font-extrabold text-white"
+                className="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-none bg-ink text-base font-extrabold text-white"
               >
-                <ChatIcon size={20} className="text-accent" />
+                <ChatIcon size={20} />
                 Ask when it’s back
               </a>
             ) : (
-              <span className="flex h-[54px] flex-1 items-center justify-center rounded-[14px] bg-surface text-sm font-bold text-muted">Sold out</span>
+              <span className="flex h-[54px] flex-1 items-center justify-center rounded-none bg-surface text-sm font-bold text-muted">Sold out</span>
             )}
           </div>
         </div>
@@ -342,7 +342,7 @@ export function ProductPage() {
 /** Opens the phone's share sheet; on computers without one, opens WhatsApp. */
 async function shareProduct(name: string, price: number, id: string) {
   const url = `${window.location.origin}/p/${id}`
-  const text = `${name} for ${formatPrice(price)} at VK's Store`
+  const text = `${name} for ${formatPrice(price)} at Vrack Clothing`
   if (navigator.share) {
     try {
       await navigator.share({ title: name, text, url })

@@ -42,7 +42,7 @@ export function Account() {
         </button>
       </div>
 
-      <InstallApp label="Add VK's Store to your home screen" />
+      <InstallApp label="Add Vrack to your home screen" />
 
       {role === 'admin' && (
         <Link to="/admin" className="text-sm font-extrabold underline underline-offset-4">

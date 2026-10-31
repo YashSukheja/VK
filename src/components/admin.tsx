@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const fieldClass =
-  'h-11 w-full min-w-0 rounded-[10px] border-[1.5px] border-field bg-white px-3 text-[15px] outline-none focus:border-ink'
+  'h-11 w-full min-w-0 rounded-none border-[1.5px] border-field bg-white px-3 text-[15px] outline-none focus:border-ink'
 
 export function Card({ title, children, aside }: { title?: string; children: ReactNode; aside?: ReactNode }) {
   return (
@@ -19,7 +19,7 @@ export function Card({ title, children, aside }: { title?: string; children: Rea
 
 export function Stepper({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
   return (
-    <div className="flex items-center rounded-[10px] border-[1.5px] border-field bg-white">
+    <div className="flex items-center rounded-none border-[1.5px] border-field bg-white">
       <button type="button" aria-label={`Remove one ${label}`} onClick={() => onChange(Math.max(0, value - 1))} className="h-10 w-11 text-lg font-bold">
         −
       </button>
@@ -49,7 +49,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
 
 export function PrimaryButton({ children, disabled, type = 'button', onClick }: { children: ReactNode; disabled?: boolean; type?: 'button' | 'submit'; onClick?: () => void }) {
   return (
-    <button type={type} disabled={disabled} onClick={onClick} className="h-[52px] rounded-[14px] bg-ink px-5 text-base font-extrabold text-white disabled:opacity-60">
+    <button type={type} disabled={disabled} onClick={onClick} className="h-[52px] rounded-none bg-ink px-5 text-base font-extrabold text-white disabled:opacity-60">
       {children}
     </button>
   )

@@ -135,3 +135,9 @@ export const PinIcon = (p: IconProps) => (
     <circle cx="12" cy="9" r="2.5" />
   </svg>
 )
+
+export const MenuIcon = (p: IconProps) => (
+  <svg {...base({ strokeWidth: 1.8, ...p })}>
+    <path d="M3 8h18M3 16h12" />
+  </svg>
+)

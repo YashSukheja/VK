@@ -20,7 +20,7 @@ export function ProductCard({ product, index = 0, colours = [] }: { product: Pro
             <span className="absolute left-2 top-2 rounded-md bg-ink px-2 py-1 text-[11px] font-extrabold uppercase text-white">Sold out</span>
           )}
           {stock > 0 && stock <= LOW_STOCK && (
-            <span className="absolute left-2 top-2 rounded-md bg-accent px-2 py-1 text-[11px] font-extrabold uppercase text-ink">
+            <span className="absolute left-2 top-2 bg-ink px-2 py-1 text-[11px] font-extrabold uppercase text-white">
               Only {stock} left
             </span>
           )}

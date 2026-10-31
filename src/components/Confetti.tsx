@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-const COLORS = ['#d4ff3f', '#111111', '#ffffff', '#d4ff3f']
+const COLORS = ['#000000', '#8c8c86', '#ffffff', '#c9c9c3']
 
 /** A short burst of lime, black and white confetti. Skipped for reduced motion. */
 export function Confetti() {
@@ -39,7 +39,7 @@ export function Confetti() {
         ctx.translate(p.x, p.y)
         ctx.rotate(p.spin)
         ctx.fillStyle = p.color
-        ctx.strokeStyle = '#111111'
+        ctx.strokeStyle = '#000000'
         ctx.lineWidth = dpr
         ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
         if (p.color === '#ffffff') ctx.strokeRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)

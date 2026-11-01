@@ -217,3 +217,37 @@ test('VK swaps every product photo for the mannequin demo photos', async ({ page
   await expect(photo).toBeVisible()
   expect(await photo.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
 })
+
+test('VK adds the demo products, shoppers see jeans with photos, then VK removes them', async ({ page }) => {
+  await page.goto('/admin/login')
+  await page.getByLabel('Email').fill(admin.email)
+  await page.getByLabel('Password').fill(admin.password)
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByLabel('6-digit code').fill(totp(secret))
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await expect(page.getByRole('heading', { name: 'Bookings' })).toBeVisible()
+  await page.getByRole('link', { name: 'Settings' }).click()
+
+  const card = page.getByRole('region', { name: 'Demo products' })
+  await card.getByRole('button', { name: 'Add demo products' }).click()
+  await expect(card.getByText('Done. 12 demo items added to the shop.')).toBeVisible({ timeout: 60_000 })
+
+  const svc = service()
+  const { data: blue } = await svc.from('products').select('id, product_images(path), product_sizes(size, stock)').eq('name', 'Mid Blue Baggy Jeans').single()
+  expect(blue.product_images.length).toBe(3)
+  expect(blue.product_sizes.map((s) => s.size)).toContain('32')
+
+  await page.goto('/shop?cat=jeans')
+  const photo = page.getByRole('link', { name: /Mid Blue Baggy Jeans/ }).locator('img').first()
+  await expect(photo).toBeVisible()
+  await expect.poll(() => photo.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
+
+  await page.goto('/admin/settings')
+  await card.getByRole('button', { name: 'Remove demo products' }).click()
+  await card.getByRole('button', { name: 'Yes, remove demo items' }).click()
+  await expect(card.getByText('Done. 12 demo items removed.')).toBeVisible({ timeout: 30_000 })
+  const { data: left } = await svc.from('products').select('id').like('description', 'Demo piece.%')
+  expect(left).toHaveLength(0)
+  const { data: gone } = await svc.storage.from('product-images').download(blue.product_images[0].path)
+  expect(gone).toBeNull()
+})

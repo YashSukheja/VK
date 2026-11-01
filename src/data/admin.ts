@@ -168,7 +168,7 @@ export async function fetchSalesSince(since: Date): Promise<Sale[]> {
 
 /** The built-in mannequin photos in public/demo, by kind of clothing. Items of one kind take turns through them. */
 /** Bump when the demo photo files change, so browsers fetch the new ones. */
-const DEMO_VERSION = 2
+const DEMO_VERSION = 3
 
 const DEMO_SETS = {
   tee: ['pink-tee', 'black-tee', 'lavender-tee'],
@@ -212,19 +212,7 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
   const products = unwrap(await supabase.from('products').select('id, name, category_id')) as { id: string; name: string; category_id: string }[]
   const typeOf = new Map(categories.map((c) => [c.id, `${c.slug} ${c.name}`]))
 
-  // Download each demo photo once and make its small copy once.
-  const cache = new Map<string, { big: Blob; small: File }>()
-  async function demo(name: string) {
-    let hit = cache.get(name)
-    if (!hit) {
-      const res = await fetch(`/demo/${name}.webp?v=${DEMO_VERSION}`, { cache: 'reload' })
-      if (!res.ok) throw new Error(`Couldn't load the demo photo ${name}.`)
-      const big = await res.blob()
-      hit = { big, small: await makeThumbnail(big) }
-      cache.set(name, hit)
-    }
-    return hit
-  }
+  const demo = demoPhotoLoader()
 
   const turn = { tee: 0, shirt: 0, jeans: 0, look: 0 }
   for (const [i, p] of products.entries()) {
@@ -232,16 +220,118 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
     const kind = demoKindFor(typeOf.get(p.category_id) ?? '', p.name)
     const sets = DEMO_SETS[kind]
     const set = sets[turn[kind]++ % sets.length]
-    const views = DEMO_CLOSEUPS.has(set) ? ['front', 'back', 'closeup'] : ['front', 'back']
-    for (const [order, side] of views.entries()) {
-      const { big, small } = await demo(`${set}-${side}`)
-      const path = `${p.id}/${crypto.randomUUID()}.webp`
-      const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, big, { contentType: 'image/webp' })
-      if (error) throw new Error(`Photo upload failed: ${error.message}`)
-      await supabase.storage.from(IMAGE_BUCKET).upload(thumbPath(path), small, { contentType: 'image/webp' })
-      unwrap(await supabase.from('product_images').insert({ product_id: p.id, path, sort_order: order }))
-    }
+    await addDemoPhotos(p.id, set, demo)
   }
   onProgress(products.length, products.length)
   return { removed: old.length, products: products.length }
+}
+
+/** Downloads each demo photo once (always fresh) and makes its small copy once. */
+function demoPhotoLoader() {
+  const cache = new Map<string, Promise<{ big: Blob; small: File }>>()
+  return (name: string) => {
+    let hit = cache.get(name)
+    if (!hit) {
+      hit = (async () => {
+        const res = await fetch(`/demo/${name}.webp?v=${DEMO_VERSION}`, { cache: 'reload' })
+        if (!res.ok) throw new Error(`Couldn't load the demo photo ${name}.`)
+        const big = await res.blob()
+        return { big, small: await makeThumbnail(big) }
+      })()
+      cache.set(name, hit)
+    }
+    return hit
+  }
+}
+
+/** Gives one product the front, back (and close-up, if there is one) of a demo outfit. */
+async function addDemoPhotos(productId: string, set: string, demo: ReturnType<typeof demoPhotoLoader>) {
+  const views = DEMO_CLOSEUPS.has(set) ? ['front', 'back', 'closeup'] : ['front', 'back']
+  for (const [order, side] of views.entries()) {
+    const { big, small } = await demo(`${set}-${side}`)
+    const path = `${productId}/${crypto.randomUUID()}.webp`
+    const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, big, { contentType: 'image/webp' })
+    if (error) throw new Error(`Photo upload failed: ${error.message}`)
+    await supabase.storage.from(IMAGE_BUCKET).upload(thumbPath(path), small, { contentType: 'image/webp' })
+    unwrap(await supabase.from('product_images').insert({ product_id: productId, path, sort_order: order }))
+  }
+}
+
+/** Marks the sample items, so they can be found and removed later. */
+const DEMO_NOTE = 'Demo piece.'
+
+type DemoKind = 'tee' | 'shirt' | 'jeans'
+const DEMO_PRODUCTS: { set: string; kind: DemoKind; name: string; colour: string; price: number; mrp: number; about: string }[] = [
+  { set: 'blue-jeans', kind: 'jeans', name: 'Mid Blue Baggy Jeans', colour: 'Mid blue', price: 999, mrp: 2199, about: 'Relaxed through the leg with a soft vintage wash.' },
+  { set: 'pink-tee', kind: 'tee', name: 'Balloon Print Oversized Tee', colour: 'Pink', price: 499, mrp: 999, about: 'Heavy cotton, dropped shoulders, balloon print on the back.' },
+  { set: 'plaid-shirt', kind: 'shirt', name: 'Black and White Check Shirt', colour: 'Black and white', price: 749, mrp: 1499, about: 'Brushed cotton check with one chest pocket.' },
+  { set: 'white-jeans', kind: 'jeans', name: 'White Straight Jeans', colour: 'White', price: 949, mrp: 1999, about: 'Clean straight leg in rigid white denim.' },
+  { set: 'black-tee', kind: 'tee', name: 'Think Insane Oversized Tee', colour: 'Black', price: 549, mrp: 1099, about: 'Boxy fit with a big splash print on the back.' },
+  { set: 'beige-shirt', kind: 'shirt', name: 'Beige Cotton Overshirt', colour: 'Beige', price: 849, mrp: 1699, about: 'Soft textured cotton, wear it open or buttoned.' },
+  { set: 'charcoal-jeans', kind: 'jeans', name: 'Charcoal Loose Jeans', colour: 'Charcoal', price: 899, mrp: 1899, about: 'Loose fit with a faded charcoal wash.' },
+  { set: 'lavender-tee', kind: 'tee', name: 'Studio Oversized Tee', colour: 'Lavender', price: 499, mrp: 999, about: 'Oversized tee with a Studio print on the back.' },
+  { set: 'shirt', kind: 'shirt', name: 'Sage Green Linen Shirt', colour: 'Sage green', price: 799, mrp: 1599, about: 'Light linen blend, sleeves look good rolled.' },
+  { set: 'grey-wide-jeans', kind: 'jeans', name: 'Stone Grey Wide Leg Jeans', colour: 'Stone grey', price: 949, mrp: 1999, about: 'Wide leg, sits on the shoe.' },
+  { set: 'grey-jeans', kind: 'jeans', name: 'Grey Wash Wide Jeans', colour: 'Grey', price: 899, mrp: 1899, about: 'Washed grey denim with a wide, easy leg.' },
+  { set: 'jeans', kind: 'jeans', name: 'Washed Black Relaxed Jeans', colour: 'Washed black', price: 899, mrp: 1999, about: 'Relaxed fit in a washed black.' },
+]
+const DEMO_CATEGORY: Record<DemoKind, { name: string; slug: string; sizes: string[]; match: RegExp }> = {
+  tee: { name: 'T-Shirts', slug: 't-shirts', sizes: ['S', 'M', 'L', 'XL'], match: /t-?shirt|tee/i },
+  shirt: { name: 'Shirts', slug: 'shirts', sizes: ['S', 'M', 'L', 'XL'], match: /^(?!.*t-?shirt).*shirt/i },
+  jeans: { name: 'Jeans', slug: 'jeans', sizes: ['30', '32', '34', '36'], match: /jean|denim/i },
+}
+
+/**
+ * Adds a set of sample items (jeans, tees and shirts) with the mannequin photos, prices and a few
+ * pieces in each size, so the shop can be shown before real stock is listed. Items already added
+ * are skipped, and missing categories are made.
+ */
+export async function addDemoProducts(onProgress: (done: number, total: number) => void): Promise<{ added: number }> {
+  const categories = unwrap(await supabase.from('categories').select('id, name, slug, sizes')) as { id: string; name: string; slug: string; sizes: string[] }[]
+  const have = new Set((unwrap(await supabase.from('products').select('name')) as { name: string }[]).map((p) => p.name))
+  const demo = demoPhotoLoader()
+  const categoryFor = new Map<DemoKind, { id: string; sizes: string[] }>()
+
+  async function category(kind: DemoKind) {
+    let hit = categoryFor.get(kind)
+    if (hit) return hit
+    const want = DEMO_CATEGORY[kind]
+    const found = categories.find((c) => want.match.test(c.slug) || want.match.test(c.name))
+    if (found) hit = { id: found.id, sizes: found.sizes?.length ? found.sizes : want.sizes }
+    else {
+      const made = unwrap(await supabase.from('categories').insert({ name: want.name, slug: want.slug, sizes: want.sizes, sort_order: categories.length }).select('id').single()) as { id: string }
+      hit = { id: made.id, sizes: want.sizes }
+    }
+    categoryFor.set(kind, hit)
+    return hit
+  }
+
+  const todo = DEMO_PRODUCTS.filter((d) => !have.has(d.name))
+  for (const [i, d] of todo.entries()) {
+    onProgress(i, todo.length)
+    const cat = await category(d.kind)
+    const product = unwrap(
+      await supabase
+        .from('products')
+        .insert({ name: d.name, category_id: cat.id, price: d.price, mrp: d.mrp, colour: d.colour, description: `${DEMO_NOTE} ${d.about}`, is_visible: true })
+        .select('id')
+        .single(),
+    ) as { id: string }
+    unwrap(await supabase.from('product_sizes').insert(cat.sizes.slice(0, 6).map((size, order) => ({ product_id: product.id, size, stock: [2, 3, 3, 1, 2, 1][order], sort_order: order }))))
+    await addDemoPhotos(product.id, d.set, demo)
+  }
+  onProgress(todo.length, todo.length)
+  return { added: todo.length }
+}
+
+/** Deletes the sample items added by addDemoProducts, with their photos. */
+export async function removeDemoProducts(): Promise<{ removed: number }> {
+  const rows = unwrap(await supabase.from('products').select('id, product_images(path)').like('description', `${DEMO_NOTE}%`)) as { id: string; product_images: { path: string }[] }[]
+  const files = rows.flatMap((r) => r.product_images.flatMap((i) => [i.path, thumbPath(i.path)]))
+  for (let i = 0; i < files.length; i += 100) {
+    const { error } = await supabase.storage.from(IMAGE_BUCKET).remove(files.slice(i, i + 100))
+    if (error) throw new Error(error.message)
+  }
+  if (rows.length) unwrap(await supabase.from('products').delete().in('id', rows.map((r) => r.id)))
+  return { removed: rows.length }
 }

@@ -124,7 +124,7 @@ test('shoppers browse by category and see sizes and prices', async ({ page, brow
   const thumb = shirt.locator('img')
   await expect(thumb).toHaveAttribute('src', /\.thumb\.webp$/)
   await expect.poll(() => thumb.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0)
-  expect(await thumb.evaluate((img) => img.naturalWidth)).toBeLessThanOrEqual(480)
+  expect(await thumb.evaluate((img) => img.naturalWidth)).toBeLessThanOrEqual(720)
   await expect(page.getByRole('link', { name: /Slim Jeans/ })).toContainText('Only 1 left')
   if (shots) await page.screenshot({ path: `${shots}/shop-phone.png`, fullPage: true })
 

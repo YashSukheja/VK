@@ -65,8 +65,8 @@ export function Shop() {
     return qs ? `/shop?${qs}` : '/shop'
   }
 
-  const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [])
-  const settings = useAsync(fetchSettings, [])
+  const catalog = useAsync(() => Promise.all([fetchCategories(), fetchProducts()]), [], 'catalog')
+  const settings = useAsync(fetchSettings, [], 'settings')
 
   const [categories, products] = catalog.data ?? [[], []]
   const active = categories.find((c) => c.slug === activeSlug)

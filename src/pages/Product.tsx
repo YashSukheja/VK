@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { BackIcon, CheckIcon, ChatIcon, InfoIcon, ShareIcon } from '../components/Icons'
 import { Photo } from '../components/Photo'
 import { HeartButton } from '../components/HeartButton'
@@ -23,13 +23,16 @@ import { useTitle } from '../lib/useTitle'
 
 export function ProductPage() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
+  // Back goes to the page you came from; opened from a shared link, it goes to the shop.
+  const goBack = () => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/shop'))
   const product = useAsync(async () => {
     const [found, categories] = await Promise.all([fetchProduct(id), fetchCategories()])
     const colours = found?.group_id ? await fetchColours(found.group_id) : []
     return [found, categories, colours] as const
-  }, [id])
-  const settings = useAsync(fetchSettings, [])
-  const all = useAsync(fetchProducts, [])
+  }, [id], 'product')
+  const settings = useAsync(fetchSettings, [], 'settings')
+  const all = useAsync(fetchProducts, [], 'products')
   const [pickedSize, setPickedSize] = useState<string | null>(null)
   const [qty, setQty] = useState(1)
   const [photoIndex, setPhotoIndex] = useState(0)
@@ -127,13 +130,14 @@ export function ProductPage() {
                 ))
               )}
             </div>
-            <Link
-              to="/shop"
-              aria-label="Back to shop"
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Back"
               className="absolute left-3.5 top-3.5 flex size-11 items-center justify-center bg-white md:hidden"
             >
               <BackIcon />
-            </Link>
+            </button>
             <div className="absolute right-3.5 top-3.5 bg-white md:hidden">
               <CartButton count={cart.count} />
             </div>

@@ -167,6 +167,9 @@ export async function fetchSalesSince(since: Date): Promise<Sale[]> {
 }
 
 /** The built-in mannequin photos in public/demo, by kind of clothing. Items of one kind take turns through them. */
+/** Bump when the demo photo files change, so browsers fetch the new ones. */
+const DEMO_VERSION = 2
+
 const DEMO_SETS = {
   tee: ['pink-tee', 'black-tee', 'lavender-tee'],
   shirt: ['shirt', 'plaid-shirt', 'beige-shirt'],
@@ -214,7 +217,7 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
   async function demo(name: string) {
     let hit = cache.get(name)
     if (!hit) {
-      const res = await fetch(`/demo/${name}.webp`)
+      const res = await fetch(`/demo/${name}.webp?v=${DEMO_VERSION}`, { cache: 'reload' })
       if (!res.ok) throw new Error(`Couldn't load the demo photo ${name}.`)
       const big = await res.blob()
       hit = { big, small: await makeThumbnail(big) }

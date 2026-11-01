@@ -93,9 +93,9 @@ export function Home() {
       <SiteHeader settings={settings.data} />
       <HeroShow pieces={inStock.length} play={introDone} />
       <Ticker />
-      {categories.length > 0 && <TypeList categories={categories} />}
 
       {withPhoto.length > 0 && <RackRing products={withPhoto.slice(0, ON_RACK)} total={inStock.length} />}
+      {categories.length > 0 && <TypeList categories={categories} />}
 
       <section aria-labelledby="new-in" className="mx-auto max-w-6xl px-5 pb-12 pt-12">
         <div className="mb-5 flex items-baseline justify-between">

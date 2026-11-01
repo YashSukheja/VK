@@ -177,11 +177,15 @@ const DEMO_SETS = {
 const DEMO_CLOSEUPS = new Set(['black-tee', 'blue-jeans', 'beige-shirt', 'white-jeans'])
 
 /** Which kind of demo photo suits a type of clothing. */
-function demoKindFor(category: string): keyof typeof DEMO_SETS {
-  if (/t-?shirt|tee|polo|top/i.test(category)) return 'tee'
-  if (/jean|trouser|pant|short|cargo|chino|jogger|bottom|denim/i.test(category)) return 'jeans'
-  if (/shirt|jacket|hoodie|sweat|kurta|blazer|coat|overshirt/i.test(category)) return 'shirt'
-  return 'look'
+function demoKindFor(category: string, name = ''): keyof typeof DEMO_SETS {
+  // Full outfits only for combos and sets; everything else shows just its own piece.
+  if (/combo|co-?ord|set|look|outfit/i.test(category)) return 'look'
+  for (const text of [category, name]) {
+    if (/t-?shirt|tee|polo|top/i.test(text)) return 'tee'
+    if (/jean|trouser|pant|short|cargo|chino|jogger|bottom|denim/i.test(text)) return 'jeans'
+    if (/shirt|jacket|hoodie|sweat|kurta|blazer|coat|overshirt/i.test(text)) return 'shirt'
+  }
+  return 'shirt'
 }
 
 /**
@@ -202,7 +206,7 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
   }
 
   const categories = unwrap(await supabase.from('categories').select('id, name, slug')) as { id: string; name: string; slug: string }[]
-  const products = unwrap(await supabase.from('products').select('id, category_id')) as { id: string; category_id: string }[]
+  const products = unwrap(await supabase.from('products').select('id, name, category_id')) as { id: string; name: string; category_id: string }[]
   const typeOf = new Map(categories.map((c) => [c.id, `${c.slug} ${c.name}`]))
 
   // Download each demo photo once and make its small copy once.
@@ -222,7 +226,7 @@ export async function replaceWithDemoPhotos(onProgress: (done: number, total: nu
   const turn = { tee: 0, shirt: 0, jeans: 0, look: 0 }
   for (const [i, p] of products.entries()) {
     onProgress(i, products.length)
-    const kind = demoKindFor(typeOf.get(p.category_id) ?? '')
+    const kind = demoKindFor(typeOf.get(p.category_id) ?? '', p.name)
     const sets = DEMO_SETS[kind]
     const set = sets[turn[kind]++ % sets.length]
     const views = DEMO_CLOSEUPS.has(set) ? ['front', 'back', 'closeup'] : ['front', 'back']
